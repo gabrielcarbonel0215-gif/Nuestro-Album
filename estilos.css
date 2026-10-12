@@ -22,7 +22,29 @@
 }
 
 * { box-sizing: border-box; }
+html, body {
+    overscroll-behavior-y: none;
+    -webkit-tap-highlight-color: transparent;
+}
 body.no-scroll { overflow: hidden; }
+
+/* Utilidades ligeras (Sustituto nativo ultra-rápido de Tailwind CDN) */
+.w-full { width: 100%; }
+.h-full { height: 100%; }
+.object-cover { object-fit: cover; }
+.w-3\.5 { width: 0.875rem; }
+.h-3\.5 { height: 0.875rem; }
+.w-4 { width: 1rem; }
+.h-4 { height: 1rem; }
+.w-5 { width: 1.25rem; }
+.h-5 { height: 1.25rem; }
+.w-6 { width: 1.5rem; }
+.h-6 { height: 1.5rem; }
+.w-7 { width: 1.75rem; }
+.h-7 { height: 1.75rem; }
+.text-sky-500 { color: #0ea5e9; }
+.mobile-player-container { display: none; }
+.sticker-img { width: 100%; height: 100%; object-fit: contain; }
 
 /* Cursores personalizados */
 .interactable { cursor: url('imagenes/cursores/cinnamoroll_pointer.png'), pointer !important; }
@@ -1351,13 +1373,13 @@ body.playlist-debug-mode #playlist-container {
     }
     body[data-mobile-tab="photos"] .time-counters-wrapper {
         width: calc(100% - 24px) !important;
-        max-width: 390px !important;
+        max-width: 340px !important;
         margin: 0 auto !important;
         overflow: hidden !important;
         position: relative !important;
         user-select: none !important;
         touch-action: pan-y !important;
-        border-radius: 20px !important;
+        border-radius: 18px !important;
     }
     body[data-mobile-tab="photos"] .time-counters-container {
         display: flex !important;
@@ -1382,9 +1404,9 @@ body.playlist-debug-mode #playlist-container {
         backdrop-filter: blur(8px) !important;
         -webkit-backdrop-filter: blur(8px) !important;
         border: 1px solid rgba(255, 255, 255, 0.2) !important;
-        border-radius: 20px !important;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2) !important;
-        padding: 18px 24px 16px 24px !important;
+        border-radius: 18px !important;
+        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.18) !important;
+        padding: 12px 18px 11px 18px !important;
         display: flex !important;
         flex-direction: column !important;
         align-items: center !important;
@@ -1402,27 +1424,27 @@ body.playlist-debug-mode #playlist-container {
     }
     body[data-mobile-tab="photos"] .time-counter-box .time-label {
         font-family: inherit !important;
-        font-size: 16px !important;
+        font-size: 13px !important;
         font-weight: 700 !important;
         color: #ffffff !important;
         text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.6) !important;
-        margin-bottom: 5px !important;
+        margin-bottom: 3px !important;
         text-transform: none !important;
-        letter-spacing: 0 !important;
+        letter-spacing: 0.2px !important;
     }
     body[data-mobile-tab="photos"] .time-counter-box .time-main-val {
         font-family: inherit !important;
-        font-size: 28px !important;
-        font-weight: 900 !important;
+        font-size: 21px !important;
+        font-weight: 800 !important;
         color: #ffffff !important;
         text-shadow: 1px 2px 3px rgba(0, 0, 0, 0.65) !important;
         line-height: 1.2 !important;
-        margin-bottom: 5px !important;
+        margin-bottom: 3px !important;
         letter-spacing: 0.2px !important;
     }
     body[data-mobile-tab="photos"] .time-counter-box .time-sub-val {
         font-family: inherit !important;
-        font-size: 13.5px !important;
+        font-size: 11.5px !important;
         font-weight: 500 !important;
         color: rgba(255, 255, 255, 0.92) !important;
         text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.6) !important;
@@ -1432,20 +1454,20 @@ body.playlist-debug-mode #playlist-container {
         display: flex !important;
         justify-content: center !important;
         align-items: center !important;
-        gap: 7px !important;
-        margin-top: 8px !important;
-        margin-bottom: 4px !important;
+        gap: 6px !important;
+        margin-top: 6px !important;
+        margin-bottom: 2px !important;
     }
     body[data-mobile-tab="photos"] .tc-dot {
-        width: 7px;
-        height: 7px;
+        width: 6px;
+        height: 6px;
         border-radius: 50%;
         background: rgba(255, 255, 255, 0.45);
         transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1);
         cursor: pointer;
     }
     body[data-mobile-tab="photos"] .tc-dot.active {
-        width: 22px;
+        width: 18px;
         border-radius: 10px;
         background: #ffffff;
         box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
@@ -1458,7 +1480,7 @@ body.playlist-debug-mode #playlist-container {
         justify-content: center !important;
         width: 100% !important;
         max-width: 100% !important;
-        margin: 6px auto 0 !important;
+        margin: 4px auto 0 !important;
         padding: 0 !important;
         box-sizing: border-box !important;
         animation: fadeInMobileView 0.25s ease-out;
@@ -1475,13 +1497,13 @@ body.playlist-debug-mode #playlist-container {
     }
     body[data-mobile-tab="photos"] .carousel-container {
         width: calc(100% - 24px) !important;
-        max-width: 390px !important;
+        max-width: 345px !important;
         min-width: unset !important;
         margin: 0 auto !important;
-        height: 275px !important;
+        height: 235px !important;
         box-sizing: border-box !important;
         position: relative !important;
-        border-radius: 18px !important;
+        border-radius: 16px !important;
     }
     body[data-mobile-tab="photos"] .carousel-bg-layer,
     body[data-mobile-tab="photos"] .door-overlay {
@@ -1492,15 +1514,15 @@ body.playlist-debug-mode #playlist-container {
         height: 100% !important;
         transform: translate(-50%, -50%) !important;
         background-size: 100% 100% !important;
-        border-radius: 18px !important;
+        border-radius: 16px !important;
     }
     body[data-mobile-tab="photos"] .slide-group {
         position: absolute !important;
-        top: 13px !important;
-        left: 13px !important;
-        width: calc(100% - 26px) !important;
-        height: calc(100% - 26px) !important;
-        gap: 10px !important;
+        top: 10px !important;
+        left: 10px !important;
+        width: calc(100% - 20px) !important;
+        height: calc(100% - 20px) !important;
+        gap: 8px !important;
         display: flex !important;
         justify-content: center !important;
         align-items: center !important;
@@ -1508,15 +1530,15 @@ body.playlist-debug-mode #playlist-container {
         padding: 0 !important;
     }
     body[data-mobile-tab="photos"] .slide-photo {
-        width: calc(50% - 5px) !important;
+        width: calc(50% - 4px) !important;
         height: 100% !important;
         object-fit: cover !important;
-        border-radius: 10px !important;
+        border-radius: 8px !important;
         box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3) !important;
     }
     body[data-mobile-tab="photos"] .carousel-indicators {
-        margin-top: 10px !important;
-        margin-bottom: 8px !important;
+        margin-top: 8px !important;
+        margin-bottom: 6px !important;
     }
     body[data-mobile-tab="photos"] .calendar-game-block {
         display: flex !important;
@@ -1547,14 +1569,70 @@ body.playlist-debug-mode #playlist-container {
     }
     body[data-mobile-tab="songs"] #narrative-intro {
         display: block !important;
+        font-size: 12.5px !important;
+        line-height: 1.55 !important;
+        max-width: calc(100% - 24px) !important;
+        margin: max(16px, env(safe-area-inset-top, 16px)) auto 12px auto !important;
+        padding: 12px 14px !important;
+        border-radius: 14px !important;
+        text-align: left !important;
         animation: fadeInMobileView 0.25s ease-out;
     }
     body[data-mobile-tab="songs"] .cards-container {
         display: flex !important;
         flex-direction: column;
         align-items: center;
-        width: 100%;
+        width: 100% !important;
+        gap: 16px !important;
+        margin-top: 10px !important;
+        padding-bottom: calc(max(10px, env(safe-area-inset-bottom, 10px)) + 65px) !important;
         animation: fadeInMobileView 0.25s ease-out;
+    }
+    body[data-mobile-tab="songs"] .timeline-column {
+        width: calc(100% - 20px) !important;
+        padding: 14px 10px !important;
+        border-radius: 16px !important;
+        gap: 10px !important;
+    }
+    body[data-mobile-tab="songs"] .column-header {
+        font-size: 16px !important;
+        margin-bottom: 12px !important;
+    }
+    body[data-mobile-tab="songs"] .column-header::after {
+        margin: 6px auto 0 !important;
+        width: 40px !important;
+        height: 2px !important;
+    }
+    body[data-mobile-tab="songs"] .polaroids-wrapper {
+        gap: 10px !important;
+    }
+    body[data-mobile-tab="songs"] .card {
+        width: 135px !important;
+        height: 215px !important;
+        border-radius: 12px !important;
+        padding: 6px !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+    }
+    body[data-mobile-tab="songs"] .card img {
+        height: 155px !important;
+        border-radius: 8px !important;
+    }
+    body[data-mobile-tab="songs"] .card-content {
+        padding: 4px 2px !important;
+    }
+    body[data-mobile-tab="songs"] .card-content h2 {
+        font-size: 11.5px !important;
+        margin: 2px 0 1px !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    body[data-mobile-tab="songs"] .card-subtitle {
+        font-size: 10px !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: block;
     }
     body[data-mobile-tab="songs"] #mobile-mini-player-bar {
         display: flex !important;
@@ -1686,21 +1764,21 @@ body.playlist-debug-mode #playlist-container {
        ----------------------------------------------------------- */
     #mobile-bottom-nav {
         position: fixed;
-        bottom: max(10px, env(safe-area-inset-bottom, 10px));
+        bottom: max(8px, env(safe-area-inset-bottom, 8px));
         left: 50%;
         transform: translateX(-50%);
         width: calc(100% - 24px);
-        max-width: 420px;
-        height: 60px;
-        background: rgba(255, 255, 255, 0.94);
+        max-width: 375px;
+        height: 52px;
+        background: rgba(255, 255, 255, 0.95);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
-        border-radius: 28px;
-        box-shadow: 0 10px 32px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.9);
+        border-radius: 24px;
+        box-shadow: 0 8px 28px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.9);
         display: flex !important;
         align-items: center;
         justify-content: space-around;
-        padding: 4px 6px;
+        padding: 3px 5px;
         box-sizing: border-box;
         z-index: 10003;
         user-select: none;
@@ -1713,10 +1791,10 @@ body.playlist-debug-mode #playlist-container {
         align-items: center;
         justify-content: center;
         gap: 2px;
-        height: 50px;
+        height: 44px;
         background: transparent;
         border: none;
-        border-radius: 18px;
+        border-radius: 16px;
         color: #94a3b8;
         font-family: 'Quicksand', sans-serif;
         cursor: pointer;
@@ -1725,14 +1803,14 @@ body.playlist-debug-mode #playlist-container {
         padding: 2px 1px;
     }
     .mobile-nav-btn span {
-        font-size: 9.5px;
+        font-size: 9px;
         font-weight: 700;
         white-space: nowrap;
         letter-spacing: -0.3px;
     }
     .mobile-nav-btn i {
-        width: 18px;
-        height: 18px;
+        width: 17px;
+        height: 17px;
         transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s ease;
         color: #94a3b8;
     }
@@ -1745,7 +1823,7 @@ body.playlist-debug-mode #playlist-container {
         background: rgba(2, 132, 199, 0.12);
     }
     .mobile-nav-btn.active i {
-        transform: scale(1.1);
+        transform: scale(1.08);
         color: #0284c7;
     }
 
@@ -1793,7 +1871,7 @@ body.playlist-debug-mode #playlist-container {
         flex-direction: column;
         justify-content: space-between;
         align-items: center;
-        padding: max(10px, env(safe-area-inset-top, 10px)) 16px calc(max(10px, env(safe-area-inset-bottom, 10px)) + 66px);
+        padding: max(8px, env(safe-area-inset-top, 8px)) 14px calc(max(8px, env(safe-area-inset-bottom, 8px)) + 58px);
         box-sizing: border-box;
         overflow: hidden;
         user-select: none;
@@ -1878,18 +1956,18 @@ body.playlist-debug-mode #playlist-container {
         align-items: center;
         justify-content: space-between;
         width: 100%;
-        max-width: 335px;
+        max-width: 300px;
         margin: 0 auto;
         z-index: 10;
-        padding: 4px 2px 2px;
+        padding: 2px 2px 0;
         box-sizing: border-box;
     }
     .mobile-btn-circle {
-        width: 44px;
-        height: 44px;
+        width: 38px;
+        height: 38px;
         border-radius: 50%;
         background: #ffffff;
-        box-shadow: 0 4px 16px rgba(148, 163, 184, 0.22);
+        box-shadow: 0 4px 14px rgba(148, 163, 184, 0.2);
         border: 1px solid rgba(255, 255, 255, 0.95);
         display: flex;
         align-items: center;
@@ -1899,26 +1977,36 @@ body.playlist-debug-mode #playlist-container {
         outline: none;
         transition: transform 0.15s, background-color 0.15s;
     }
+    .mobile-btn-circle i,
+    .mobile-btn-circle svg {
+        width: 18px;
+        height: 18px;
+    }
     .mobile-btn-circle:active {
         transform: scale(0.92);
         background: #f8fafc;
     }
     .mobile-top-center-pill {
         background: #ffffff;
-        padding: 8px 18px;
+        padding: 6px 14px;
         border-radius: 9999px;
-        box-shadow: 0 4px 14px rgba(148, 163, 184, 0.2);
+        box-shadow: 0 4px 12px rgba(148, 163, 184, 0.18);
         border: 1px solid rgba(255, 255, 255, 0.95);
         display: inline-flex;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
         color: #0f172a;
         font-family: 'Quicksand', sans-serif;
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 700;
         cursor: pointer;
         outline: none;
         transition: transform 0.15s, background-color 0.15s, box-shadow 0.15s;
+    }
+    .mobile-top-center-pill i,
+    .mobile-top-center-pill svg {
+        width: 14px;
+        height: 14px;
     }
     .mobile-top-center-pill:active {
         transform: scale(0.95);
@@ -1930,25 +2018,25 @@ body.playlist-debug-mode #playlist-container {
        ----------------------------------------------------------- */
     .mobile-artwork-card {
         width: 100%;
-        max-width: 320px;
+        max-width: clamp(190px, 48vw, 225px);
         aspect-ratio: 1/1;
         position: relative;
-        border-radius: 34px;
-        padding: 8px;
+        border-radius: 24px;
+        padding: 6px;
         background: rgba(255, 255, 255, 0.85);
-        box-shadow: 0 18px 40px -10px rgba(148, 163, 184, 0.38), 0 0 0 1.5px rgba(255, 255, 255, 0.95) inset;
+        box-shadow: 0 14px 32px -8px rgba(148, 163, 184, 0.35), 0 0 0 1.5px rgba(255, 255, 255, 0.95) inset;
         backdrop-filter: blur(10px);
         z-index: 5;
-        margin: 4px auto;
+        margin: 3px auto;
         box-sizing: border-box;
     }
     .mobile-artwork-inner {
         width: 100%;
         height: 100%;
-        border-radius: 26px;
+        border-radius: 19px;
         overflow: hidden;
         position: relative;
-        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     }
     #mobile-cover-img {
         width: 100%;
@@ -1958,7 +2046,6 @@ body.playlist-debug-mode #playlist-container {
         transition: transform 0.3s ease;
     }
 
-
     /* -----------------------------------------------------------
        5. Metadatos de la Canción y Botón de Favorito
        ----------------------------------------------------------- */
@@ -1967,25 +2054,25 @@ body.playlist-debug-mode #playlist-container {
         align-items: center;
         justify-content: space-between;
         width: 100%;
-        max-width: 320px;
+        max-width: 300px;
         z-index: 5;
-        margin: 4px auto 2px;
+        margin: 3px auto 1px;
         box-sizing: border-box;
     }
     .mobile-track-texts {
         display: flex;
         flex-direction: column;
         overflow: hidden;
-        padding-right: 10px;
+        padding-right: 8px;
     }
     .mobile-track-title {
-        font-size: 24px;
+        font-size: 18px;
         font-weight: 800;
         color: #0f172a;
         margin: 0;
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 5px;
         line-height: 1.15;
         white-space: nowrap;
         overflow: hidden;
@@ -1993,27 +2080,27 @@ body.playlist-debug-mode #playlist-container {
     }
     .mobile-sparkle {
         color: #fbbf24;
-        font-size: 20px;
+        font-size: 16px;
         flex-shrink: 0;
     }
     .mobile-track-artist-line {
         display: flex;
         align-items: center;
-        gap: 5px;
-        font-size: 13.5px;
+        gap: 4px;
+        font-size: 12px;
         font-weight: 600;
         color: #64748b;
-        margin-top: 3px;
+        margin-top: 2px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
     }
     .mobile-btn-favorite {
-        width: 48px;
-        height: 48px;
+        width: 38px;
+        height: 38px;
         border-radius: 50%;
         background: #ffffff;
-        box-shadow: 0 4px 16px rgba(148, 163, 184, 0.22);
+        box-shadow: 0 4px 14px rgba(148, 163, 184, 0.2);
         border: 1px solid rgba(255, 255, 255, 0.85);
         display: flex;
         align-items: center;
@@ -2023,6 +2110,11 @@ body.playlist-debug-mode #playlist-container {
         flex-shrink: 0;
         outline: none;
         transition: transform 0.15s, background-color 0.2s, color 0.2s;
+    }
+    .mobile-btn-favorite i,
+    .mobile-btn-favorite svg {
+        width: 18px;
+        height: 18px;
     }
     .mobile-btn-favorite:active {
         transform: scale(0.9);
@@ -2037,14 +2129,14 @@ body.playlist-debug-mode #playlist-container {
        ----------------------------------------------------------- */
     .mobile-progress-section {
         width: 100%;
-        max-width: 320px;
+        max-width: 300px;
         z-index: 5;
         margin: 2px auto;
         box-sizing: border-box;
     }
     .mobile-progress-bar-container {
         width: 100%;
-        height: 8px;
+        height: 6px;
         border-radius: 9999px;
         background: rgba(203, 213, 225, 0.55);
         position: relative;
@@ -2063,24 +2155,24 @@ body.playlist-debug-mode #playlist-container {
     }
     .mobile-progress-thumb {
         position: absolute;
-        right: -7px;
+        right: -5px;
         top: 50%;
         transform: translateY(-50%);
-        width: 16px;
-        height: 16px;
+        width: 13px;
+        height: 13px;
         border-radius: 50%;
         background: #ffffff;
-        border: 3.5px solid #f472b6;
-        box-shadow: 0 2px 6px rgba(244, 114, 182, 0.45);
+        border: 2.5px solid #f472b6;
+        box-shadow: 0 2px 5px rgba(244, 114, 182, 0.45);
         pointer-events: none;
     }
     .mobile-time-row {
         display: flex;
         justify-content: space-between;
-        font-size: 11px;
+        font-size: 10.5px;
         font-weight: 600;
         color: #64748b;
-        margin-top: 6px;
+        margin-top: 4px;
     }
 
     /* -----------------------------------------------------------
@@ -2091,17 +2183,17 @@ body.playlist-debug-mode #playlist-container {
         align-items: center;
         justify-content: space-between;
         width: 100%;
-        max-width: 320px;
+        max-width: 300px;
         z-index: 5;
-        margin: 4px auto;
+        margin: 3px auto;
         box-sizing: border-box;
     }
     .mobile-ctrl-btn {
-        width: 44px;
-        height: 44px;
+        width: 38px;
+        height: 38px;
         border-radius: 50%;
         background: #ffffff;
-        box-shadow: 0 4px 14px rgba(148, 163, 184, 0.2);
+        box-shadow: 0 4px 12px rgba(148, 163, 184, 0.18);
         border: 1px solid rgba(255, 255, 255, 0.9);
         display: flex;
         align-items: center;
@@ -2111,6 +2203,11 @@ body.playlist-debug-mode #playlist-container {
         outline: none;
         transition: transform 0.15s, background-color 0.2s, color 0.2s;
     }
+    .mobile-ctrl-btn i,
+    .mobile-ctrl-btn svg {
+        width: 18px;
+        height: 18px;
+    }
     .mobile-ctrl-btn:active {
         transform: scale(0.92);
         background: #f8fafc;
@@ -2118,14 +2215,14 @@ body.playlist-debug-mode #playlist-container {
     .mobile-ctrl-btn.active {
         background: #fce7f3;
         color: #db2777;
-        box-shadow: 0 4px 14px rgba(219, 39, 119, 0.25);
+        box-shadow: 0 4px 12px rgba(219, 39, 119, 0.25);
     }
     .mobile-ctrl-hero-play {
-        width: 66px;
-        height: 66px;
+        width: 54px;
+        height: 54px;
         border-radius: 50%;
         background: linear-gradient(135deg, #7dd3fc 0%, #38bdf8 100%);
-        box-shadow: 0 8px 24px rgba(56, 189, 248, 0.45), 0 0 0 3px rgba(255, 255, 255, 0.85);
+        box-shadow: 0 6px 20px rgba(56, 189, 248, 0.45), 0 0 0 2.5px rgba(255, 255, 255, 0.85);
         border: none;
         display: flex;
         align-items: center;
@@ -2135,13 +2232,18 @@ body.playlist-debug-mode #playlist-container {
         outline: none;
         transition: transform 0.15s, box-shadow 0.2s;
     }
+    .mobile-ctrl-hero-play i,
+    .mobile-ctrl-hero-play svg {
+        width: 22px;
+        height: 22px;
+    }
     .mobile-ctrl-hero-play:active {
         transform: scale(0.94);
-        box-shadow: 0 4px 14px rgba(56, 189, 248, 0.35);
+        box-shadow: 0 3px 12px rgba(56, 189, 248, 0.35);
     }
     .mobile-ctrl-hero-play i,
     .mobile-ctrl-hero-play svg {
-        margin-left: 3.5px;
+        margin-left: 2.5px;
     }
     .mobile-ctrl-hero-play i[data-lucide="pause"],
     .mobile-ctrl-hero-play svg.lucide-pause {
@@ -2154,18 +2256,18 @@ body.playlist-debug-mode #playlist-container {
     .mobile-pills-row {
         display: flex;
         width: 100%;
-        max-width: 320px;
+        max-width: 300px;
         z-index: 5;
-        margin: 4px auto;
+        margin: 2px auto;
         box-sizing: border-box;
     }
     .mobile-notes-wide-btn {
         width: 100%;
         background: linear-gradient(135deg, #ffffff 0%, #fdf2f8 100%);
-        border-radius: 20px;
-        padding: 10px 16px;
-        box-shadow: 0 4px 14px rgba(244, 114, 182, 0.2);
-        border: 1.5px solid rgba(244, 114, 182, 0.45);
+        border-radius: 16px;
+        padding: 8px 14px;
+        box-shadow: 0 3px 12px rgba(244, 114, 182, 0.18);
+        border: 1.5px solid rgba(244, 114, 182, 0.4);
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -2182,17 +2284,22 @@ body.playlist-debug-mode #playlist-container {
     .mobile-notes-btn-left {
         display: flex;
         align-items: center;
-        gap: 8px;
-        font-size: 13px;
+        gap: 6px;
+        font-size: 12px;
         font-weight: 800;
         color: #db2777;
         font-family: 'Quicksand', sans-serif;
+    }
+    .mobile-notes-btn-left i,
+    .mobile-notes-btn-left svg {
+        width: 15px;
+        height: 15px;
     }
     .mobile-notes-btn-right {
         display: flex;
         align-items: center;
         gap: 4px;
-        font-size: 11.5px;
+        font-size: 11px;
         font-weight: 700;
         color: #f472b6;
     }
@@ -2217,11 +2324,11 @@ body.playlist-debug-mode #playlist-container {
        ----------------------------------------------------------- */
     .mobile-lyrics-pill {
         width: 100%;
-        max-width: 320px;
+        max-width: 300px;
         background: #ffffff;
-        border-radius: 22px;
-        padding: 11px 16px;
-        box-shadow: 0 6px 18px rgba(148, 163, 184, 0.18);
+        border-radius: 16px;
+        padding: 8px 14px;
+        box-shadow: 0 4px 14px rgba(148, 163, 184, 0.16);
         border: 1px solid rgba(255, 255, 255, 0.9);
         display: flex;
         align-items: center;
@@ -2229,7 +2336,7 @@ body.playlist-debug-mode #playlist-container {
         gap: 8px;
         cursor: pointer;
         z-index: 5;
-        margin: 4px auto 2px;
+        margin: 2px auto 0;
         box-sizing: border-box;
         transition: transform 0.15s, background-color 0.15s;
     }
@@ -2240,11 +2347,16 @@ body.playlist-debug-mode #playlist-container {
     .mobile-lyrics-left {
         display: flex;
         align-items: center;
-        gap: 7px;
+        gap: 6px;
         overflow: hidden;
-        font-size: 12px;
+        font-size: 11.5px;
         font-weight: 700;
         color: #334155;
+    }
+    .mobile-lyrics-left i,
+    .mobile-lyrics-left svg {
+        width: 14px;
+        height: 14px;
     }
     #mobile-lyrics-preview {
         white-space: nowrap;
@@ -2263,21 +2375,21 @@ body.playlist-debug-mode #playlist-container {
        ----------------------------------------------------------- */
     #mobile-mini-player-bar {
         position: fixed;
-        bottom: calc(max(10px, env(safe-area-inset-bottom, 10px)) + 66px);
+        bottom: calc(max(8px, env(safe-area-inset-bottom, 8px)) + 58px);
         left: 50%;
         transform: translateX(-50%);
         width: calc(100% - 24px);
-        max-width: 420px;
-        height: 56px;
+        max-width: 375px;
+        height: 52px;
         background: rgba(255, 255, 255, 0.94);
         backdrop-filter: blur(16px);
-        border-radius: 28px;
-        box-shadow: 0 10px 30px rgba(148, 163, 184, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.9);
+        border-radius: 26px;
+        box-shadow: 0 8px 24px rgba(148, 163, 184, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.9);
         z-index: 10002;
         display: none;
         align-items: center;
-        padding: 5px 12px 5px 8px;
-        gap: 10px;
+        padding: 4px 10px 4px 6px;
+        gap: 8px;
         box-sizing: border-box;
         cursor: pointer;
         animation: slideUpMiniBar 0.3s cubic-bezier(0.16, 1, 0.3, 1);

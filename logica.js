@@ -1383,7 +1383,7 @@ Y tal vez intento darle profundidad a algo que es más simple, pero cuando habla
                 let diffX = startX - endX;
                 let diffY = startY - endY;
                 
-                if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 40) {
+                if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 30) {
                     if (diffX > 0) transitionTo(state.currentSlide + 1);
                     else transitionTo(state.currentSlide - 1);
                 }
