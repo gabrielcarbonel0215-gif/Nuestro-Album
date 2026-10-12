@@ -1378,12 +1378,12 @@ body.playlist-debug-mode #playlist-container {
         min-width: 100% !important;
         max-width: 100% !important;
         box-sizing: border-box !important;
-        background: rgba(0, 0, 0, 0.28) !important;
-        backdrop-filter: blur(10px) !important;
-        -webkit-backdrop-filter: blur(10px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.18) !important;
+        background: rgba(0, 0, 0, 0.22) !important;
+        backdrop-filter: blur(8px) !important;
+        -webkit-backdrop-filter: blur(8px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
         border-radius: 20px !important;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25) !important;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2) !important;
         padding: 18px 24px 16px 24px !important;
         display: flex !important;
         flex-direction: column !important;
@@ -1405,7 +1405,7 @@ body.playlist-debug-mode #playlist-container {
         font-size: 16px !important;
         font-weight: 700 !important;
         color: #ffffff !important;
-        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7) !important;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.6) !important;
         margin-bottom: 5px !important;
         text-transform: none !important;
         letter-spacing: 0 !important;
@@ -1415,7 +1415,7 @@ body.playlist-debug-mode #playlist-container {
         font-size: 28px !important;
         font-weight: 900 !important;
         color: #ffffff !important;
-        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8), 0 0 12px rgba(0, 0, 0, 0.4) !important;
+        text-shadow: 1px 2px 3px rgba(0, 0, 0, 0.65) !important;
         line-height: 1.2 !important;
         margin-bottom: 5px !important;
         letter-spacing: 0.2px !important;
@@ -1424,8 +1424,8 @@ body.playlist-debug-mode #playlist-container {
         font-family: inherit !important;
         font-size: 13.5px !important;
         font-weight: 500 !important;
-        color: rgba(255, 255, 255, 0.88) !important;
-        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7) !important;
+        color: rgba(255, 255, 255, 0.92) !important;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.6) !important;
         margin-top: 0 !important;
     }
     body[data-mobile-tab="photos"] .time-counters-dots {
