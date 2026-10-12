@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nuestro Álbum de Recuerdos</title>
+    <!-- [LIBRERÍAS] -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Quicksand:wght@500;600;700;800&display=swap" rel="stylesheet">
+    
+<link rel="stylesheet" href="estilos.css">
+</head>
+<body data-mobile-tab="player">
+   <div id="page-background"></div>
+
+   <div id="diff-selector-container">
+       <img src="imagenes/ui/difficulty_selector.png" onerror="this.src='https://via.placeholder.com/300x100?text=Selector+Dificultad'" id="diff-bg-img">
+       <svg id="diff-svg-overlay" viewBox="0 0 1664 2592">
+           <!-- Normal: Halo + Nube con Orejas (Trazado con precisión de píxel) -->
+           <g class="diff-svg-hitbox active" id="diff-btn-normal" data-difficulty="normal" title="Normal">
+               <ellipse cx="786" cy="720" rx="118" ry="40"></ellipse>
+               <path d="M 722,786 L 698,792 L 578,798 L 550,804 L 534,810 L 524,816 L 510,822 L 494,828 L 482,834 L 466,840 L 450,846 L 426,852 L 336,858 L 306,864 L 294,870 L 286,876 L 280,882 L 274,888 L 272,894 L 270,900 L 268,906 L 266,912 L 266,918 L 266,924 L 266,930 L 268,936 L 270,942 L 272,948 L 274,954 L 278,960 L 282,966 L 288,972 L 294,978 L 302,984 L 306,990 L 302,996 L 298,1002 L 296,1008 L 294,1014 L 294,1020 L 292,1026 L 292,1032 L 292,1038 L 292,1044 L 292,1050 L 292,1056 L 294,1062 L 296,1068 L 298,1074 L 300,1080 L 304,1086 L 308,1092 L 310,1098 L 316,1104 L 322,1110 L 328,1116 L 336,1122 L 346,1128 L 362,1134 L 384,1140 L 466,1146 L 472,1152 L 482,1158 L 490,1164 L 500,1170 L 518,1176 L 542,1182 L 718,1188 L 744,1194 L 824,1194 L 846,1188 L 1020,1182 L 1044,1176 L 1060,1170 L 1072,1164 L 1080,1158 L 1088,1152 L 1096,1146 L 1102,1140 L 1174,1134 L 1192,1128 L 1202,1122 L 1210,1116 L 1216,1110 L 1224,1104 L 1230,1098 L 1234,1092 L 1236,1086 L 1238,1080 L 1242,1074 L 1244,1068 L 1246,1062 L 1248,1056 L 1248,1050 L 1250,1044 L 1250,1038 L 1250,1032 L 1248,1026 L 1248,1020 L 1248,1014 L 1244,1008 L 1242,1002 L 1246,996 L 1262,990 L 1272,984 L 1280,978 L 1286,972 L 1292,966 L 1296,960 L 1300,954 L 1302,948 L 1304,942 L 1306,936 L 1306,930 L 1308,924 L 1308,918 L 1308,912 L 1306,906 L 1304,900 L 1300,894 L 1296,888 L 1292,882 L 1286,876 L 1278,870 L 1266,864 L 1236,858 L 1144,852 L 1120,846 L 1102,840 L 1088,834 L 1078,828 L 1062,822 L 1050,816 L 1038,810 L 1018,804 L 996,798 L 874,792 L 848,786 Z"></path>
+           </g>
+           <!-- Difícil: Alas de tormenta + Nube + Rayos (Trazado con precisión de píxel) -->
+           <g class="diff-svg-hitbox" id="diff-btn-hard" data-difficulty="hard" title="Difícil">
+               <path d="M 584,1256 L 574,1262 L 566,1268 L 558,1274 L 552,1280 L 544,1286 L 532,1292 L 522,1298 L 510,1304 L 496,1310 L 482,1316 L 468,1322 L 452,1328 L 432,1334 L 408,1340 L 374,1346 L 252,1352 L 250,1358 L 250,1364 L 254,1370 L 260,1376 L 266,1382 L 274,1388 L 282,1394 L 294,1400 L 308,1406 L 328,1412 L 332,1418 L 324,1424 L 314,1430 L 302,1436 L 290,1442 L 278,1448 L 274,1454 L 278,1460 L 292,1466 L 304,1472 L 302,1478 L 300,1484 L 298,1490 L 298,1496 L 298,1502 L 298,1508 L 298,1514 L 300,1520 L 302,1526 L 304,1532 L 306,1538 L 310,1544 L 314,1550 L 318,1556 L 324,1562 L 330,1568 L 336,1574 L 346,1580 L 356,1586 L 372,1592 L 464,1598 L 472,1604 L 480,1610 L 490,1616 L 500,1622 L 510,1628 L 508,1634 L 508,1640 L 506,1646 L 504,1652 L 504,1658 L 1046,1658 L 1050,1652 L 1054,1646 L 1058,1640 L 1062,1634 L 1064,1628 L 1068,1622 L 1072,1616 L 1080,1610 L 1088,1604 L 1094,1598 L 1156,1592 L 1176,1586 L 1188,1580 L 1198,1574 L 1206,1568 L 1212,1562 L 1216,1556 L 1222,1550 L 1226,1544 L 1230,1538 L 1232,1532 L 1234,1526 L 1236,1520 L 1238,1514 L 1238,1508 L 1238,1502 L 1238,1496 L 1238,1490 L 1236,1484 L 1236,1478 L 1234,1472 L 1276,1466 L 1292,1460 L 1294,1454 L 1290,1448 L 1278,1442 L 1266,1436 L 1256,1430 L 1246,1424 L 1236,1418 L 1240,1412 L 1262,1406 L 1276,1400 L 1288,1394 L 1296,1388 L 1304,1382 L 1310,1376 L 1316,1370 L 1318,1364 L 1320,1358 L 1318,1352 L 1194,1346 L 1162,1340 L 1136,1334 L 1116,1328 L 1100,1322 L 1086,1316 L 1074,1310 L 1060,1304 L 1048,1298 L 1036,1292 L 1022,1286 L 1018,1280 L 1012,1274 L 1004,1268 L 996,1262 L 986,1256 Z"></path>
+           </g>
+           <!-- Experto: Cuernos + Alas Demonio + Llamas (Trazado con precisión de píxel) -->
+           <g class="diff-svg-hitbox" id="diff-btn-expert" data-difficulty="expert" title="Experto">
+               <path d="M 590,1686 L 584,1692 L 578,1698 L 462,1704 L 442,1710 L 434,1716 L 418,1722 L 406,1728 L 392,1734 L 380,1740 L 368,1746 L 356,1752 L 348,1758 L 340,1764 L 332,1770 L 324,1776 L 316,1782 L 312,1788 L 306,1794 L 300,1800 L 294,1806 L 286,1812 L 280,1818 L 276,1824 L 272,1830 L 270,1836 L 266,1842 L 262,1848 L 258,1854 L 254,1860 L 252,1866 L 246,1872 L 244,1878 L 242,1884 L 240,1890 L 238,1896 L 234,1902 L 234,1908 L 232,1914 L 230,1920 L 230,1926 L 280,1932 L 270,1938 L 266,1944 L 262,1950 L 262,1956 L 262,1962 L 258,1968 L 254,1974 L 252,1980 L 250,1986 L 252,1992 L 254,1998 L 258,2004 L 264,2010 L 274,2016 L 282,2022 L 282,2028 L 284,2034 L 288,2040 L 296,2046 L 330,2052 L 338,2058 L 476,2064 L 486,2070 L 494,2076 L 506,2082 L 520,2088 L 546,2094 L 724,2100 L 746,2106 L 820,2106 L 840,2100 L 1014,2094 L 1038,2088 L 1052,2082 L 1064,2076 L 1072,2070 L 1082,2064 L 1228,2058 L 1268,2052 L 1276,2046 L 1284,2040 L 1286,2034 L 1288,2028 L 1290,2022 L 1290,2016 L 1302,2010 L 1314,2004 L 1318,1998 L 1322,1992 L 1322,1986 L 1322,1980 L 1320,1974 L 1316,1968 L 1308,1962 L 1302,1956 L 1300,1950 L 1294,1944 L 1286,1938 L 1234,1932 L 1334,1926 L 1334,1920 L 1332,1914 L 1330,1908 L 1328,1902 L 1326,1896 L 1324,1890 L 1322,1884 L 1320,1878 L 1318,1872 L 1314,1866 L 1308,1860 L 1306,1854 L 1302,1848 L 1298,1842 L 1294,1836 L 1290,1830 L 1286,1824 L 1284,1818 L 1278,1812 L 1272,1806 L 1266,1800 L 1260,1794 L 1254,1788 L 1246,1782 L 1240,1776 L 1232,1770 L 1224,1764 L 1216,1758 L 1206,1752 L 1196,1746 L 1186,1740 L 1172,1734 L 1158,1728 L 1146,1722 L 1134,1716 L 1124,1710 L 1104,1704 L 984,1698 L 980,1692 L 972,1686 Z"></path>
+           </g>
+       </svg>
+   </div>
+
+   <div id="player-wrapper">
+        <div class="expand-trigger"><i data-lucide="chevron-left" class="w-6 h-6"></i></div>
+        <div id="player" class="mode-bubble">
+            <div class="player-expanded-bg"></div>
+            <div class="album-container">
+                <img id="marco-img" src="imagenes/marcos/marco.png" onerror="this.style.opacity='0'" class="marco">
+                <img id="m-e1" src="imagenes/marcos/Marco2.jpg" onerror="this.style.opacity='0'" class="marco">
+                <img id="m-e2" src="imagenes/marcos/Marco3.jpg" onerror="this.style.opacity='0'" class="marco">
+                <div class="album-inner"><img id="album-img" src="imagenes/albumes/cancion1.jpg" onerror="this.src='https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=400'" class="w-full h-full object-cover"></div>
+                <div class="b-play"><i data-lucide="play" id="b-i" size="54" fill="currentColor"></i></div>
+            </div>
+            <div class="expanded-content-wrapper">
+                <img id="bar-album-img" class="frame-album-art" src="imagenes/albumes/cancion1.jpg" onerror="this.src='https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=400'">
+                <div class="frame-controls-area">
+                    <div class="bar-title" id="track-title">
+                        <div id="song-name">Canción 1</div>
+                        <div id="artist-name">Artista</div>
+                    </div>
+                    <div class="bar-progress-wrapper">
+                         <div id="p-c" class="bar-progress-track"><div id="p-f" class="bar-progress-fill"></div></div>
+                         <div class="bar-time"><span id="cur">0:00</span><span id="dur">0:00</span></div>
+                    </div>
+                    <div class="bar-buttons">
+                         <div class="bar-btn-mini" id="prev-btn"><i data-lucide="skip-back" size="24" fill="currentColor"></i></div>
+                         <div class="bar-play-circle" id="p-main"><i data-lucide="play" id="p-i" size="24" fill="currentColor"></i></div>
+                         <div class="bar-btn-mini" id="next-btn"><i data-lucide="skip-forward" size="24" fill="currentColor"></i></div>
+                         <div class="bar-btn-mini" id="dir-btn"><i data-lucide="folder-open" size="20" fill="currentColor"></i></div>
+                         <div class="bar-btn-mini" id="toggle-list-btn"><i data-lucide="list" size="20" fill="currentColor"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="playlist-container">
+            <div id="playlist-manual-wrapper">
+                <div id="playlist-background"></div>
+                <div id="playlist-content-overlay">
+                    <!-- Se llena dinámicamente -->
+                </div>
+            </div>
+        </div>
+    </div>
+    <audio id="main-audio"></audio>
+    <input type="file" id="dir-input" webkitdirectory directory multiple style="display:none;">
+    <input type="file" id="sticker-input" accept="image/*" style="display:none;">
+
+    <div id="movable-sticker">
+        <img src="imagenes/stickers/cinnamoroll_sticker.png" onerror="this.src='https://media.tenor.com/a6a66d6d0a0a0a0a/cinnamoroll.gif'" alt="Sticker Decorativo">
+    </div>
+
+<div id="intro-overlay" class="hidden">
+    <div id="envelope-stage" class="interactable">
+        <img id="envelope-img" src="imagenes/animaciones/sobre/sobre_cerrado.png" onerror="this.src='https://images.unsplash.com/photo-1555447405-058428d1deef?q=80&w=300'" alt="Sobre">
+    </div>
+    <div id="letter-stage" class="letter-container interactable hidden-stage">
+        <button class="cerrar interactable cerrar-letter" id="close-letter-btn" title="Cerrar carta">×</button>
+        <div class="letter-scroll-wrapper">
+            <div class="letter-content">
+                <p>Pensé y pensé, cada día más decepcionado por mi falta de creatividad, por la imposibilidad de representar aquello que siento, queriendo demostrar lo que llevo en el corazón (una metáfora bonita, aunque quizás algo tonta, el cerebro se encarga de eso ¿no?). Tal vez es absurdo, no porque mi amor lo sea, sino porque resulta realmente complejo demostrar algo que ni yo mismo entiendo... algo que aún no tiene un final, ni una definición clara.</p>
+                <p>No comprendo del todo lo que significa amar, tal vez soy demasiado ingenuo como para decir que amo algo, pero sí comprendo las sensaciones, sé que esta manera de sobrepensar las cosas, de querer mejorar, de intentar enseñarte lo mucho que te quiero y lo que valgo, no puede ser malo. Aún así, no entiendo lo que ocurre, no entiendo cómo se genera el cariño, ni por qué me resulta tan difícil soltarte o intentar olvidarte...</p>
+                <p>Supongo que ahora formas parte de mí, de cada situación, de cada momento, de cada mínima acción o decisión... todo, de alguna manera, me lleva a ti, supongo que eso es lo que entiendo del "amor".</p>
+                <p>No quiero tener miedo de amar, no quiero callar lo que siento cuando lo siento, quiero dar todo de mí, mi confusión, mi seguridad, mi alegría, mi tristeza y también mi enojo. No para influir en ti, sino para demostrarme a mí que, aun mostrándome vulnerable, esto tiene sentido.</p>
+                <p class="letter-signoff">Te amo, Keyla.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="particles-container"></div> 
+
+<!-- ==============================================================
+     REPRODUCTOR MÓVIL ESTILO CINNAMOROLL (VISTA DEDICADA PARA CELULAR)
+     ============================================================== -->
+<div id="stitch-mobile-player" class="mobile-player-container">
+    <!-- Destellos y estrellas decorativas de fondo -->
+    <div class="mobile-star star-top-right">★</div>
+    <div class="mobile-star star-mid-left">✦</div>
+    <div class="mobile-star star-bottom-right">★</div>
+
+    <!-- Barra Superior -->
+    <header class="mobile-top-bar">
+        <button class="mobile-btn-circle" id="mobile-minimize-btn" title="Ver Álbum de Recuerdos">
+            <i data-lucide="chevron-down" class="w-6 h-6"></i>
+        </button>
+        <button class="mobile-top-center-pill" id="mobile-top-library-btn" title="Abrir biblioteca de canciones" onclick="window.CinnamorollMobilePlayer &amp;&amp; window.CinnamorollMobilePlayer.openPlaylistSheet()">
+            <i data-lucide="disc-3" class="w-4 h-4 text-sky-500"></i>
+            <span>Biblioteca</span>
+        </button>
+        <button class="mobile-btn-circle" id="mobile-theme-toggle-btn" title="Cambiar Tema / Skin" onclick="window.CinnamorollMobilePlayer &amp;&amp; window.CinnamorollMobilePlayer.cycleTheme()">
+            <i data-lucide="shirt" class="w-5 h-5"></i>
+        </button>
+    </header>
+
+    <!-- Tarjeta de Portada Central -->
+    <div class="mobile-artwork-card">
+        <div class="mobile-artwork-inner">
+            <img id="mobile-cover-img" src="imagenes/albumes/ArruinarloTodo.jpg" alt="Portada de la Canción" onerror="this.src='https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=400'">
+        </div>
+    </div>
+
+    <!-- Fila de Metadatos y Favorito -->
+    <div class="mobile-track-info-row">
+        <div class="mobile-track-texts">
+            <h1 class="mobile-track-title" id="mobile-track-title">
+                <span id="mobile-song-name">Arruinarlo Todo</span>
+                <span class="mobile-sparkle">✨</span>
+            </h1>
+            <div class="mobile-track-artist-line">
+                <i data-lucide="tag" class="w-3.5 h-3.5"></i>
+                <span id="mobile-artist-name">Molinette Cinema</span>
+            </div>
+        </div>
+        <button class="mobile-btn-favorite" id="mobile-heart-btn" title="Marcar como favorita">
+            <i data-lucide="heart" class="w-5 h-5" id="mobile-heart-icon"></i>
+        </button>
+    </div>
+
+    <!-- Barra de Progreso y Marcadores de Tiempo -->
+    <div class="mobile-progress-section">
+        <div class="mobile-progress-bar-container" id="mobile-progress-track">
+            <div class="mobile-progress-fill" id="mobile-progress-fill">
+                <div class="mobile-progress-thumb"></div>
+            </div>
+        </div>
+        <div class="mobile-time-row">
+            <span id="mobile-cur-time">0:00</span>
+            <span id="mobile-dur-time">0:00</span>
+        </div>
+    </div>
+
+    <!-- Controles Principales (5 botones) -->
+    <div class="mobile-controls-row">
+        <button class="mobile-ctrl-btn mobile-shuffle-btn" id="mobile-shuffle-btn" title="Aleatorio">
+            <i data-lucide="shuffle" class="w-5 h-5"></i>
+        </button>
+        <button class="mobile-ctrl-btn mobile-prev-btn" id="mobile-prev-btn" title="Anterior">
+            <i data-lucide="skip-back" class="w-5 h-5"></i>
+        </button>
+        <button class="mobile-ctrl-hero-play" id="mobile-hero-play" title="Reproducir / Pausar">
+            <i data-lucide="play" class="w-7 h-7" id="mobile-hero-play-icon"></i>
+        </button>
+        <button class="mobile-ctrl-btn mobile-next-btn" id="mobile-next-btn" title="Siguiente">
+            <i data-lucide="skip-forward" class="w-5 h-5"></i>
+        </button>
+        <button class="mobile-ctrl-btn mobile-repeat-btn" id="mobile-repeat-btn" title="Repetir">
+            <i data-lucide="repeat" class="w-5 h-5"></i>
+        </button>
+    </div>
+
+    <!-- Fila de Acciones: Botón Alargado de Notitas :) -->
+    <div class="mobile-pills-row">
+        <button class="mobile-notes-wide-btn" id="mobile-notes-pill-btn" title="Notitas :)" onclick="window.CinnamorollMobilePlayer &amp;&amp; window.CinnamorollMobilePlayer.openNotesIfAvailable()">
+            <div class="mobile-notes-btn-left">
+                <i data-lucide="book-heart" class="w-4 h-4"></i>
+                <span>Notitas :)</span>
+            </div>
+            <div class="mobile-notes-btn-right">
+                <span id="mobile-notes-btn-status">Leeme amorcito</span>
+                <i data-lucide="chevron-right" class="w-4 h-4" id="mobile-notes-btn-arrow"></i>
+            </div>
+        </button>
+    </div>
+
+    <!-- Cajón Inferior (Nombre de la Canción / Dedicatoria) -->
+    <div class="mobile-lyrics-pill" id="mobile-lyrics-pill" title="Toca para leer la dedicatoria">
+        <div class="mobile-lyrics-left">
+            <i data-lucide="music-2" class="w-4 h-4"></i>
+            <span id="mobile-lyrics-preview">Arruinarlo Todo</span>
+        </div>
+        <i data-lucide="chevron-up" class="w-4 h-4 mobile-lyrics-chevron"></i>
+    </div>
+</div>
+
+<div class="main-content-wrapper" data-tab-section="home">
+    <div class="bloque-superior">
+        <div class="rectangulo-izquierdo">
+            <div class="time-counters-wrapper">
+                <div class="time-counters-container" id="time-counters-track">
+                    <div id="time-since-met" class="time-counter-box active-slide" data-label="Nos conocimos hace:" style="text-align: center;"><p style="color: #ccc;">Calculando...</p></div>
+                    <div id="time-we-met-irl" class="time-counter-box" data-label="Nos vimos hace:" style="text-align: center;"><p style="color: #ccc;">Calculando...</p></div>
+                    <div id="time-together" class="time-counter-box" data-label="Estamos juntos desde:" style="text-align: center;"><p style="color: #ccc;">Calculando...</p></div>
+                </div>
+                <div class="time-counters-dots" id="time-counters-dots">
+                    <span class="tc-dot active" data-index="0" title="Nos conocimos hace"></span>
+                    <span class="tc-dot" data-index="1" title="Nos vimos hace"></span>
+                    <span class="tc-dot" data-index="2" title="Estamos juntos desde"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <div class="carousel-wrapper-flex">
+        <div id="mobile-letter-box" data-tab-section="letter">
+            <button id="open-letter-btn" class="interactable"><img src="imagenes/iconos/icono_carta.png" alt="Abrir carta"></button>
+        </div>
+        <div class="carousel-center-block" data-tab-section="home">
+            <div class="carousel-container draggable" id="carousel-main-box">
+                <!-- AQUÍ ES DONDE SE CARGA LA IMAGEN -->
+                <div id="carousel-bg-layer" class="carousel-bg-layer active"></div>
+                
+                <!-- Slide Group 1 -->
+                <div class="slide-group active">
+                    <img src="imagenes/fotos/carrusel/foto1.jpg" alt="Foto 1" loading="lazy" class="slide-photo">
+                    <img src="imagenes/fotos/carrusel/foto2.jpg" alt="Foto 2" loading="lazy" class="slide-photo">
+                </div>
+                
+                <!-- Slide Group 2 -->
+                <div class="slide-group">
+                    <img src="imagenes/fotos/carrusel/foto3.jpg" alt="Foto 3" loading="lazy" class="slide-photo">
+                    <img src="imagenes/fotos/carrusel/foto4.jpg" alt="Foto 4" loading="lazy" class="slide-photo">
+                </div>
+                
+                <!-- Slide Group 3 -->
+                <div class="slide-group">
+                    <img src="imagenes/fotos/carrusel/foto5.jpg" alt="Foto 5" loading="lazy" class="slide-photo">
+                    <img src="imagenes/fotos/carrusel/foto6.jpg" alt="Foto 6" loading="lazy" class="slide-photo">
+                </div>
+                
+                <!-- Márgenes Invisibles Interactivos para cambiar imagen -->
+                <div class="carousel-edge-zone carousel-edge-left interactable" title="Foto Anterior"></div>
+                <div class="carousel-edge-zone carousel-edge-right interactable" title="Foto Siguiente"></div>
+            </div>
+            <div class="carousel-indicators"></div>
+        </div>
+
+        <div class="calendar-game-block" data-tab-section="arcade">
+            <div class="extra-box" id="calendar-box">
+                <div id="calendar-bg-layer" class="calendar-bg-layer"></div>
+                <div class="calendar-header">
+                    <button id="prev-month" class="interactable"><</button><span id="month-year"></span><button id="next-month" class="interactable">></button>
+                </div>
+                <div class="calendar-grid" id="calendar-grid"></div>
+            </div>
+            <a id="game-icon-image" href="#" class="open-game-modal-btn interactable"><img src="imagenes/iconos/icono_juego.png" alt="Icono de Juego"></a>
+        </div>
+    </div>
+
+    <div id="narrative-intro" data-tab-section="songs">
+        Escuché que el ser humano puede "atesorar" momentos o revivirlos a través de olores y sonidos, gracias a una conexión con nuestro sistema límbico, creando un "viaje" sensorial vivido. Contigo me ocurre de ambas formas, pero no puedo "guardar" un olor... lastimosamente, pero sí puedo explicarte aquello que me hace sentir o recordar estas canciones.
+    </div>
+
+    <div class="cards-container" data-tab-section="songs">
+        <div class="timeline-column left">
+            <h3 class="column-header">Pasado Pisado</h3>
+            <div class="polaroids-wrapper">
+                <div class="card interactable" data-title="Arruinarlo Todo" data-subtitle="Molinette Cinema" data-desc="" data-link="https://open.spotify.com/intl-es/track/76ej7aOQU1tfdzkE3xQ6HS?si=bb9afe9ea9d04066">
+                  <img src="imagenes/albumes/ArruinarloTodo.jpg" alt="Verte Así" loading="lazy">
+                  <div class="card-content"><h2>Arruinarlo Todo</h2><span class="card-subtitle">Molinette Cinema</span></div>
+                </div>
+                <div class="card interactable" data-title="Chica Acuario" data-subtitle="Axel Fiks" data-desc="" data-link="https://open.spotify.com/intl-es/track/5c9B03lTeTYbOVgtPS6Tj2?si=21d598990bbd43d5">
+                  <img src="imagenes/albumes/ChicaAcuario.jpg" alt="Chica Acuario" loading="lazy">
+                  <div class="card-content"><h2>Chica Acuario</h2><span class="card-subtitle">Axel Fiks</span></div>
+                </div>
+                <div class="card interactable" data-title="Ojitos de Md" data-subtitle="Axel Fiks" data-desc="" data-link="https://open.spotify.com/intl-es/track/0Pkc9prDMNlz3WhP9MkwMx?si=810920801f664964">
+                  <img src="imagenes/albumes/OjitosdeMd.jpg" alt="Ojitos de Md" loading="lazy">
+                  <div class="card-content"><h2>Ojitos de Md</h2><span class="card-subtitle">Axel Fiks</span></div>
+                </div>
+                <div class="card interactable" data-title="Compañera" data-subtitle="Axel Fiks" data-desc="" data-link="https://open.spotify.com/intl-es/track/3bkpWGpt6Ck6cd7SRFK4bj?si=48cb9a12c23748b8">
+                  <img src="imagenes/albumes/Compañera.jpg" alt="Compañera" loading="lazy">
+                  <div class="card-content"><h2>Compañera</h2><span class="card-subtitle">Axel Fiks</span></div>
+                </div>
+                <div class="card interactable" data-title="Niño Amor" data-subtitle="Axel Fiks" data-desc="" data-link="https://open.spotify.com/intl-es/track/1AXD4Qm1FDkXpqGRQzo9Oa?si=698f4bb06b324639">
+                  <img src="imagenes/albumes/NiñoAmor.jpg" alt="Niño Amor" loading="lazy">
+                  <div class="card-content"><h2>Niño Amor</h2><span class="card-subtitle">Axel Fiks</span></div>
+                </div>
+                <div class="card interactable" data-title="O Pato" data-subtitle="Ebony Loren" data-desc="" data-link="https://open.spotify.com/intl-es/track/2FF003rfmlKnWH7nBbJimw?si=c68cc602850b4a1e">
+                  <img src="imagenes/albumes/OPato.jpg" alt="O Pato" loading="lazy">
+                  <div class="card-content"><h2>O Pato</h2><span class="card-subtitle">Ebony Loren</span></div>
+                </div>
+                <div class="card interactable" data-title="Hard to Say Goodbye" data-subtitle="Johnny Stimson" data-desc="" data-link="https://open.spotify.com/intl-es/track/4NasktR5Hj5df1iJC6ioJt?si=5cf72a63e2404b09">
+                  <img src="imagenes/albumes/HardtoSayGoodbye.jpg" alt="Pasado 7" loading="lazy">
+                  <div class="card-content"><h2>Hard to Say Goodbye</h2><span class="card-subtitle">Johnny Stimson</span></div>
+                </div>
+                <div class="card interactable" data-title="PONPONPON" data-subtitle="Kyary Pamyu Pamyu" data-desc="" data-link="https://open.spotify.com/intl-es/track/1c6C2wg7PRbPBRRUaEvheC?si=e6f5c0a28e924472">
+                  <img src="imagenes/albumes/PONPONPON.jpg" alt="Pasado 8" loading="lazy">
+                  <div class="card-content"><h2>PONPONPON</h2><span class="card-subtitle">Kyary Pamyu Pamyu</span></div>
+                </div>
+                <div class="card interactable" data-title="Bolerito Sad" data-subtitle="Simon Grossman" data-desc="" data-link="https://open.spotify.com/intl-es/track/6zTOZgquu79UQLGtoyKf0Z?si=cd86c38e836a42a3">
+                  <img src="imagenes/albumes/BoleritoSad.jpg" onerror="this.src='https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&w=400'" alt="Extra 1" loading="lazy">
+                  <div class="card-content"><h2>Bolerito Sad</h2><span class="card-subtitle">Simon Grossman</span></div>
+                </div>
+                <div class="card interactable" data-title="Parte de Mi" data-subtitle="Simon Grossmann" data-desc="" data-link="https://open.spotify.com/intl-es/track/0AeBhP1WlBMQSJfyYB4ueA?si=d813a6d305e7446d">
+                  <img src="imagenes/albumes/PartedeMi.jpg" onerror="this.src='https://images.unsplash.com/photo-1470240731273-7821a6eeb6bd?q=80&w=400'" alt="Extra 2" loading="lazy">
+                  <div class="card-content"><h2>Parte de Mi</h2><span class="card-subtitle">Simon Grossmann</span></div>
+                </div>
+                <div class="card interactable" data-title="Cancion de Amor" data-subtitle="Viniloversus, Simon Grossman" data-desc="" data-link="https://open.spotify.com/intl-es/track/08cKYcUskKnbKC6nwJXNaW?si=8b1a2f9b79c4495c">
+                  <img src="imagenes/albumes/CanciondeAmor.jpg" onerror="this.src='https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=400'" alt="Extra 3" loading="lazy">
+                  <div class="card-content"><h2>Cancion de Amor</h2><span class="card-subtitle">Viniloversus, Simon Grossman</span></div>
+                </div>
+            <div class="card interactable" data-title="Formula" data-subtitle="Labrinth" data-desc="" data-link="https://open.spotify.com/intl-es/track/6EtKlIQmGPB9SX8UjDJG5s?si=41f6957ea72b4874">
+                    <img src="imagenes/albumes/Formula.jpg" onerror="this.src='https://via.placeholder.com/200x240?text=Nueva+Imagen'" alt="Nueva Carta" loading="lazy">
+                    <div class="card-content">
+                        <h2>Formula</h2>
+                        <span class="card-subtitle">Labrinth</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="timeline-column right">
+            <h3 class="column-header">Ahoritita Mismo</h3>
+            <div class="polaroids-wrapper">
+                <div class="card interactable" data-title="Algo Que Decirte" data-subtitle="AppleCats" data-desc="" data-link="https://open.spotify.com/intl-es/track/1cUrqY5xCAG0OuPDBoKnKY?si=508533ca8428490d">
+                  <img src="imagenes/albumes/AlgoQueDecirte.jpg" alt="Canción 7" loading="lazy">
+                  <div class="card-content"><h2>Algo Que Decirte</h2><span class="card-subtitle">AppleCats</span></div>
+                </div>
+                <div class="card interactable" data-title="Love Me Not" data-subtitle="Ravyn Lenae" data-desc="" data-link="#">
+                  <img src="imagenes/albumes/LoveMeNot.jpg" alt="Canción 8" loading="lazy">
+                  <div class="card-content"><h2>Love Me Not</h2><span class="card-subtitle">Ravyn Lenae</span></div>
+                </div>
+                <div class="card interactable" data-title="Always Forever" data-subtitle="Cults" data-desc="" data-link="https://open.spotify.com/intl-es/track/2enPRFda84VE2wtI8c86Uf?si=0785fc7419ac4073">
+                  <img src="imagenes/albumes/AlwaysForever.jpg" alt="Canción 9" loading="lazy">
+                  <div class="card-content"><h2>Always Forever</h2><span class="card-subtitle">Cults</span></div>
+                </div>
+                <div class="card interactable" data-title="Aparato" data-subtitle="Alejandra y Maria Luna" data-desc="" data-link="https://open.spotify.com/intl-es/track/1RTn9YKzFDR6LsuLq2Ia7R?si=c068856d95394cc9">
+                  <img src="imagenes/albumes/Aparato.jpg" alt="Canción 10" loading="lazy">
+                  <div class="card-content"><h2>Aparato</h2><span class="card-subtitle">Alejandra y Maria Luna</span></div>
+                </div>
+                <div class="card interactable" data-title="Salto" data-subtitle="El Joven Paiva" data-desc="" data-link="https://open.spotify.com/intl-es/track/24ihFGZFQ3S1ONWMKaVbTF?si=33b6025af31246f9">
+                  <img src="imagenes/albumes/Salto.jpg" alt="Canción 11" loading="lazy">
+                  <div class="card-content"><h2>Salto</h2><span class="card-subtitle">El Joven Paiva</span></div>
+                </div>
+                <div class="card interactable" data-title="Si Tú Me Quisieras" data-subtitle="Adrián Bello" data-desc="" data-link="https://open.spotify.com/intl-es/track/6IDYKjOBK8zMyMqv2NQ9VL?si=fa0d5a9b2fa244c8">
+                  <img src="imagenes/albumes/SiTúMeQuisieras.jpg" alt="Foto Recuerdo 1" loading="lazy">
+                  <div class="card-content"><h2>Si Tú Me Quisieras</h2><span class="card-subtitle">Adrián Bello</span></div>
+                </div>
+                <div class="card interactable" data-title="Me Voy A Valparaíso" data-subtitle="Diego Lorenzini" data-desc="" data-link="https://open.spotify.com/intl-es/track/6IDYKjOBK8zMyMqv2NQ9VL?si=b6f94d71cbaa4eca">
+                  <img src="imagenes/albumes/MeVoyAValparaíso.jpg" alt="Foto Recuerdo 2" loading="lazy">
+                  <div class="card-content"><h2>Me Voy A Valparaíso</h2><span class="card-subtitle">Diego Lorenzini</span></div>
+                </div>
+                <div class="card interactable" data-title="Dulcito e Coco" data-subtitle="Vicente Garcia" data-desc="" data-link="https://open.spotify.com/intl-es/track/3hQR682FLOBZg22eYjPA6L?si=865b6166a3204cee">
+                  <img src="imagenes/albumes/DulcitoeCoco.jpg" alt="Foto Recuerdo 3" loading="lazy">
+                  <div class="card-content"><h2>Dulcito e Coco</h2><span class="card-subtitle">Vicente Garcia</span></div>
+                </div>
+                <div class="card interactable" data-title="Movimiento Astral" data-subtitle="Gauchito Club" data-desc="" data-link="https://open.spotify.com/intl-es/track/3TthnEq8J6TKefgkakYt9v?si=1c5d5021bb7c4488">
+                  <img src="imagenes/albumes/MovimientoAstral.jpg" onerror="this.src='https://images.unsplash.com/photo-1559339352-11d035aa65de?q=80&w=400'" alt="Extra 4" loading="lazy">
+                  <div class="card-content"><h2>Movimiento Astral</h2><span class="card-subtitle">Gauchito Club</span></div>
+                </div>
+                <div class="card interactable" data-title="Cuando Regreses a Mi" data-subtitle="Molinette Cinema" data-desc="" data-link="https://open.spotify.com/intl-es/track/6s7vWQ07LAoEi2uNw4WlMB?si=5feb2d76dd5c49d3">
+                  <img src="imagenes/albumes/CuandoRegresesaMi.jpg" onerror="this.src='https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=400'" alt="Extra 5" loading="lazy">
+                  <div class="card-content"><h2>Cuando Regreses a Mi</h2><span class="card-subtitle">Molinette Cinema</span></div>
+                </div>
+                <div class="card interactable" data-title="Beautiful Boy" data-subtitle="Jhon Lennon" data-desc="" data-link="https://open.spotify.com/intl-es/track/5GMQdzgtI7vtpmtps2YiYx?si=9ce574cab8904620">
+                  <img src="imagenes/albumes/BeautifulBoy.jpg" onerror="this.src='https://images.unsplash.com/photo-1621252179027-94459d27d3ee?q=80&w=400'" alt="Extra 6" loading="lazy">
+                  <div class="card-content"><h2>Beautiful Boy</h2><span class="card-subtitle">Jhon Lennon</span></div>
+                </div>
+                <div class="card interactable" data-title="Imagine" data-subtitle="Jhon Lennon" data-desc="" data-link="https://open.spotify.com/intl-es/track/7pKfPomDEeI4TPT6EOYjn9?si=d0b29074338b4285">
+                    <img src="imagenes/albumes/Imagine.jpg" onerror="this.src='https://via.placeholder.com/200x240?text=Nueva+Imagen'" alt="Nueva Carta" loading="lazy">
+                    <div class="card-content">
+                        <h2>Imagine</h2>
+                        <span class="card-subtitle">Jhon Lennon</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<div id="final-message-container" data-tab-section="letter">
+    <div id="mobile-letter-card-wrapper">
+        <div id="final-message">
+<p>Pensaba darte esto hace muchísimo tiempo, y realmente agradezco mucho que no pasó, ya que no hubiera tenido la oportunidad de incluir imágenes juntos. No obstante, antes de "conocernos", para mí esto ya era muy real: tú me tenías cautivado. Con un simple mensaje en el cual demostraras tu esencia, yo estaba enamorado. Pero tenerte a mi lado es como un sueño, tú eres increíble y quiero estar a tu lado toda mi vida para yo también ser increíble. Te admiro muchísimo y me encanta la persona que eres, y la inteligencia enorme que posees. Quizás soy "sapiofílico", me gusta cachar sapos, jaja. Te amo demasiado Keyla.</p>
+        </div>
+        <button id="mobile-hero-envelope-btn" class="interactable" aria-label="Abrir carta">
+            <img src="imagenes/animaciones/Sobre/sobre_cerrado.png" alt="Sobre de carta">
+        </button>
+    </div>
+</div>
+
+<div class="modal" id="modal">
+    <div class="modal-content" id="main-modal-content">
+        
+        <!-- Stickers AGREGADOS: 4 Stickers Independientes ACTUALIZADOS -->
+        <div id="modal-sticker-1" class="modal-sticker-container" style="bottom: -118px; right: -157px; width: 406px; height: 309px;">
+            <img class="sticker-img" src="imagenes/stickers/sticker_1.png" onerror="this.src='https://media.tenor.com/a6a66d6d0a0a0a0a/cinnamoroll.gif'">
+            <div class="sticker-handle interactable"></div>
+        </div>
+        <div id="modal-sticker-2" class="modal-sticker-container" style="top: -196px; left: -196px; width: 347px; height: auto; display: block;">
+            <img class="sticker-img" src="imagenes/stickers/sticker_2.png" onerror="this.src='https://media.tenor.com/a6a66d6d0a0a0a0a/cinnamoroll.gif'">
+            <div class="sticker-handle interactable"></div>
+        </div>
+        <div id="modal-sticker-3" class="modal-sticker-container" style="bottom: -196px; left: -196px; width: 347px; height: auto; display: block;">
+            <img class="sticker-img" src="imagenes/stickers/sticker_3.png" onerror="this.src='https://media.tenor.com/a6a66d6d0a0a0a0a/cinnamoroll.gif'">
+            <div class="sticker-handle interactable"></div>
+        </div>
+        <div id="modal-sticker-4" class="modal-sticker-container" style="top: -235px; right: -392px; width: 640px; height: auto; display: block;">
+            <img class="sticker-img" src="imagenes/stickers/sticker_4.png" onerror="this.src='https://media.tenor.com/a6a66d6d0a0a0a0a/cinnamoroll.gif'">
+            <div class="sticker-handle interactable"></div>
+        </div>
+        
+        <div id="modal-image-wrapper" class="song-link-wrapper interactable" title="Reproducir esta canción">
+            <img id="modal-img" src="" alt="Imagen de la canción">
+            <div class="modal-play-overlay">
+                <i data-lucide="play" id="modal-play-icon"></i>
+            </div>
+        </div>
+        <div class="modal-text">
+            <div class="modal-text-header">
+                <h2 id="modal-title"></h2>
+                <div id="modal-subtitle" class="modal-subtitle"></div>
+            </div>
+            <div class="modal-desc-scroll">
+                <div id="modal-desc" class="modal-desc-content"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="card-edit-modal" class="modal">
+    <div class="modal-content" style="flex-direction: column; height: auto; max-height: 90vh; overflow-y: auto;">
+        <span class="cerrar interactable" id="close-edit-card">×</span>
+        <h3 style="color: var(--color-principal); margin-bottom: 20px;">Editar Carta</h3>
+        <label>Título (Nombre visible):<input type="text" id="edit-card-title"></label>
+        <label>Subtítulo (Artista/Fecha):<input type="text" id="edit-card-subtitle"></label>
+        <label>Enlace (URL Spotify/Youtube):<input type="text" id="edit-card-link"></label>
+        <label>Imagen (URL):<input type="text" id="edit-card-img"></label>
+        <label>Descripción:<textarea id="edit-card-desc" rows="3"></textarea></label>
+        <button id="save-card-btn" class="interactable" style="background: var(--color-principal); color: white; padding: 10px; border-radius: 6px; border: none; margin-top: 10px; font-weight: bold;">Guardar Cambios</button>
+    </div>
+</div>
+
+<div class="modal" id="arcade-game-modal">
+    <div id="game-blur-layer"></div>
+    <div class="modal-content modal-content-game">
+        <span class="cerrar interactable cerrar-game" id="cerrar-game-modal">×</span>
+        <div class="game-layout">
+            <div class="game-wrapper" id="game-wrapper"><canvas id="arcade-game-canvas" width="700" height="540"></canvas></div>
+            <div class="difficulty-selector">
+                <span style="color: var(--color-principal); font-weight: 800; margin-bottom: 10px;">Dificultad</span>
+                <div class="diff-buttons">
+                    <button class="diff-btn active interactable" data-speed="130">Normal</button>
+                    <button class="diff-btn interactable" data-speed="80">Difícil</button>
+                    <button class="diff-btn interactable" data-speed="50">Experto</button>
+                </div>
+            </div>
+        </div>
+        <div class="game-controls"><span id="score-display" style="color: var(--game-text); font-weight: bold; font-size: 1.2em;">Puntos: 0</span></div>
+    </div>
+</div>
+
+   <!-- HERRAMIENTA DE DISEÑO (DEV MODE) -->
+   <div id="design-tool-btn">🛠️ Ajustar Diseño</div>
+   <div id="design-tool-panel" class="hidden">
+       <p style="color: yellow; margin: 0 0 10px 0; font-size: 11px;">⚠️ Modo Diseño: Haz clic en las cartas para editar.</p>
+       
+       <div class="tool-group">
+            <h4>Contenido (Cartas)</h4>
+            <div class="tool-row" style="margin-bottom: 5px;">
+                <label style="width: auto;">Destino:</label>
+                <select id="card-target-select" style="flex: 1;">
+                    <option value="left">Pasado Pisado (Izq)</option>
+                    <option value="right">Ahoritita Mismo (Der)</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 5px;">
+                <button id="add-card-btn" style="background: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; flex: 1; font-size:11px;">+ Nueva Carta</button>
+                <button id="export-html-btn" style="background: #27ae60; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; flex: 1; font-size:11px;">Exportar HTML</button>
+            </div>
+       </div>
+       <div class="tool-group">
+            <h4>Generador Playlist JSON</h4>
+            <div class="tool-row"><label style="width: 30px;">Ruta</label><input type="text" id="json-base-path" value="musica/" placeholder="musica/"></div>
+            <div class="tool-row"><label style="width: 30px;">Dir.</label><input type="file" id="json-dir-input" webkitdirectory directory multiple style="width: 100%; font-size: 10px; color: #ccc;"></div>
+       </div>
+       <div class="tool-group">
+            <h4>Fondo de Página</h4>
+            <div class="tool-row"><label>Opac.</label><input type="range" id="bg-opacity" min="0" max="1" step="0.05" value="1"></div>
+            <div class="tool-row"><label>Satur.</label><input type="range" id="bg-saturate" min="0" max="3" step="0.1" value="1"></div>
+            <div class="tool-row"><label>Blur</label><input type="range" id="bg-blur" min="0" max="20" step="1" value="0"></div>
+       </div>
+       
+       <div class="tool-group">
+            <h4>Ajustes Calendario</h4>
+            <div class="tool-row"><label>Fondo</label><input type="text" id="calendar-bg-url" placeholder="URL Imagen Fondo"></div>
+            <div class="tool-row"><label>Subir</label><input type="file" id="calendar-bg-file" accept="image/*" style="width: 100%; font-size: 10px; color: #ccc;"></div>
+            <div class="tool-row"><label>Opac.</label><input type="range" id="calendar-bg-opacity" min="0" max="1" step="0.05" value="1"></div>
+            <div class="tool-row"><label>Blur</label><input type="range" id="calendar-bg-blur" min="0" max="20" step="1" value="0"></div>
+            <div class="tool-row"><label>Ancho</label><input type="number" id="calendar-width" value="300" step="10"></div>
+            <div class="tool-row"><label>Alto</label><input type="number" id="calendar-height" value="340" step="10"></div>
+       </div>
+       <div class="tool-group">
+            <h4 style="margin-bottom:5px;">Reproductor (Burbuja)</h4>
+            <div class="tool-row"><label>Derecha</label><input type="range" id="player-pos-x" min="-50" max="500" value="44"></div>
+            <div class="tool-row"><label>Abajo</label><input type="range" id="player-pos-y" min="-50" max="500" value="44"></div>
+            <div class="tool-row"><label>Escala</label><input type="range" id="player-scale" min="0.2" max="1.5" step="0.05" value="0.65"></div>
+            <h4 style="margin-top:10px; margin-bottom:5px;">Reproductor (Expandido)</h4>
+            <div class="tool-row"><label>Derecha</label><input type="range" id="player-exp-x" min="-50" max="500" value="0"></div>
+            <div class="tool-row"><label>Abajo</label><input type="range" id="player-exp-y" min="-50" max="500" value="30"></div>
+       </div>
+       
+       <!-- NUEVOS CONTROLES STICKER MODAL Y ESTILO MODAL -->
+       <div class="tool-group">
+            <h4>Modal (Estilo Glass) <button id="export-modal-style-btn" style="background: #8e44ad; border:none; border-radius:3px; color:white; cursor:pointer; font-size:10px; padding:2px 5px;">Exportar CSS</button></h4>
+            <div class="tool-row"><label>Opac.</label><input type="range" id="modal-glass-opacity" min="0" max="1" step="0.05" value="0.7"></div>
+            <div class="tool-row"><label>Blur</label><input type="range" id="modal-glass-blur" min="0" max="20" step="1" value="9"></div>
+            <div class="tool-row"><label>Ancho</label><input type="range" id="modal-width" min="300" max="1500" value="1065"></div>
+            <div class="tool-row"><label>Alto</label><input type="range" id="modal-height" min="200" max="1000" value="529"></div>
+
+            <h4 style="margin-top:15px;">Stickers Modal <button id="export-sticker-btn" style="background: #e67e22; border:none; border-radius:3px; color:white; cursor:pointer; font-size:10px; padding:2px 5px;">Exportar HTML</button></h4>
+            <div class="tool-row">
+                <label>Sel.</label>
+                <select id="sticker-selector">
+                    <option value="1">Sticker 1</option>
+                    <option value="2">Sticker 2</option>
+                    <option value="3">Sticker 3</option>
+                    <option value="4">Sticker 4</option>
+                </select>
+            </div>
+            <div class="tool-row" style="justify-content: flex-start; gap: 10px;">
+                <label>Visible</label>
+                <input type="checkbox" id="sticker-visible" checked style="width: auto; flex: 0;">
+            </div>
+            <div class="tool-row"><label>URL</label><input type="text" id="modal-sticker-url" placeholder="URL Sticker"></div>
+            <div class="tool-row"><label>Subir</label><input type="file" id="modal-sticker-file" accept="image/*" style="width: 100%; font-size: 10px; color: #ccc;"></div>
+            <div class="tool-row"><label>Pos X</label><input type="range" id="modal-sticker-x" min="-1000" max="3000" value="-20"></div>
+            <div class="tool-row"><label>Pos Y</label><input type="range" id="modal-sticker-y" min="-1000" max="3000" value="-20"></div>
+            <div class="tool-row"><label>Ancho</label><input type="range" id="modal-sticker-w" min="10" max="3000" value="150"></div>
+            <div class="tool-row"><label>Alto</label><input type="range" id="modal-sticker-h" min="0" max="3000" value="0" title="0 = Auto (Proporcional)"></div>
+       </div>
+
+       <!-- NUEVO GRUPO: OVERLAY VISUAL -->
+       <div class="tool-group">
+            <h4>Overlay Visual (Snake) <button id="export-overlay-css-btn" style="background: #27ae60; border:none; border-radius:3px; color:white; cursor:pointer; font-size:10px; padding:2px 5px;">Exportar CSS</button></h4>
+            <div class="tool-row"><label>Opac.</label><input type="range" id="overlay-opacity" min="0" max="1" step="0.05" value="0.5"></div>
+            <div class="tool-row"><label>Blur</label><input type="range" id="overlay-blur" min="0" max="20" step="1" value="5"></div>
+            <div class="tool-row"><label>Vis.</label><input type="checkbox" id="overlay-vis" checked></div>
+       </div>
+
+       <!-- NUEVO GRUPO: Playlist Layout -->
+       <div class="tool-group">
+            <h4>Playlist Layout <button id="export-list-css-btn" style="background: #27ae60; border:none; border-radius:3px; color:white; cursor:pointer; font-size:10px; padding:2px 5px;">Export CSS</button></h4>
+            <div class="tool-row"><label style="width:70px;">State 3 Slide</label><input type="number" id="state3-slide" value="130"><input type="range" id="state3-slide-range" min="0" max="600" value="130"></div>
+            <div class="tool-row"><label>BG W</label><input type="number" id="list-cont-w" value="475"><input type="range" id="list-cont-w-range" min="100" max="1500" value="475"></div>
+            <div class="tool-row"><label>BG H</label><input type="number" id="list-cont-h" value="273"><input type="range" id="list-cont-h-range" min="50" max="800" value="273"></div>
+            <div class="tool-row"><label>BG MB</label><input type="number" id="list-cont-mb" value="0"><input type="range" id="list-cont-mb-range" min="0" max="100" value="0"></div>
+            <div class="tool-row"><label>Off X</label><input type="number" id="list-off-x" value="167"><input type="range" id="list-off-x-range" min="-200" max="200" value="167"></div>
+            <div class="tool-row"><label>Off Y</label><input type="number" id="list-off-y" value="-48"><input type="range" id="list-off-y-range" min="-200" max="200" value="-48"></div>
+            <div class="tool-row"><label>Txt T</label><input type="number" id="list-ov-t" value="56"><input type="range" id="list-ov-t-range" min="0" max="200" value="56"></div>
+            <div class="tool-row"><label>Txt L</label><input type="number" id="list-ov-l" value="15"><input type="range" id="list-ov-l-range" min="0" max="200" value="15"></div>
+            <div class="tool-row"><label>Txt W</label><input type="number" id="list-ov-w" value="448"><input type="range" id="list-ov-w-range" min="100" max="1500" value="448"></div>
+            <div class="tool-row"><label>Txt H</label><input type="number" id="list-ov-h" value="198"><input type="range" id="list-ov-h-range" min="10" max="800" value="198"></div>
+       </div>
+
+       <!-- NUEVO GRUPO: AJUSTES LISTA & SCROLL -->
+       <div class="tool-group">
+            <h4>Ajustes Lista & Scroll</h4>
+            <div class="tool-row"><label style="width:70px;">Scroll Rad.</label><input type="range" id="scroll-radius" min="0" max="20" value="0"><input type="number" id="scroll-radius-num" value="0" style="width:40px;"></div>
+            <div class="tool-row"><label style="width:70px;">Thumb MinH</label><input type="range" id="scroll-thumb-min-h" min="10" max="100" value="46"><input type="number" id="scroll-thumb-min-h-num" value="46" style="width:40px;"></div>
+            
+            <h4 style="margin-top:10px;">Botón Lista</h4>
+            <div class="tool-row"><label>Pos X</label><input type="range" id="btn-list-x" min="-200" max="200" value="-101"><input type="number" id="btn-list-x-num" value="-101" style="width:40px;"></div>
+            <div class="tool-row"><label>Pos Y</label><input type="range" id="btn-list-y" min="-200" max="200" value="46"><input type="number" id="btn-list-y-num" value="46" style="width:40px;"></div>
+       </div>
+
+       <!-- NUEVO GRUPO: ESTILO VISUAL LISTA -->
+       <div class="tool-group">
+            <h4>Estilo Visual Lista</h4>
+            <div class="tool-row"><label style="width:70px;">Color Sel</label><input type="color" id="pl-sel-color" value="#000000" style="padding:0; border:none; height:20px;"></div>
+            <div class="tool-row"><label style="width:70px;">Opacidad</label><input type="range" id="pl-sel-opacity" min="0" max="1" step="0.01" value="0.15"><input type="number" id="pl-sel-opacity-num" value="0.15" style="width:40px;"></div>
+            <div class="tool-row"><label style="width:70px;">Escala</label><input type="range" id="pl-hover-scale" min="1" max="1.5" step="0.01" value="1.2"><input type="number" id="pl-hover-scale-num" value="1.2" style="width:40px;"></div>
+            <div class="tool-row"><label style="width:70px;">Anim (s)</label><input type="range" id="pl-anim-dur" min="0" max="1" step="0.01" value="0.05"><input type="number" id="pl-anim-dur-num" value="0.05" style="width:40px;"></div>
+       </div>
+
+       <!-- NUEVO GRUPO: DEBUG REPRODUCTOR -->
+       <div class="tool-group">
+            <h4>Debug Reproductor</h4>
+            <div class="tool-row" style="justify-content: flex-start; gap: 10px;">
+                <label style="width: auto;">Modo Diseño Lista</label>
+                <input type="checkbox" id="playlist-debug-toggle" style="width: auto; flex: 0;">
+            </div>
+       </div>
+       
+       <textarea id="css-output" readonly style="height: 100px; display:none;"></textarea>
+   </div>
+
+<script src="logica.js"></script>
+
+    <!-- Mini-Barra Flotante de Música en Móvil (visible cuando se minimiza el reproductor al Álbum) -->
+    <div id="mobile-mini-player-bar" class="mobile-mini-bar-hidden">
+        <div class="mobile-mini-art-wrap">
+            <img id="mobile-mini-cover" src="imagenes/albumes/ArruinarloTodo.jpg" alt="Mini Portada" onerror="this.src='https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=400'">
+        </div>
+        <div class="mobile-mini-info">
+            <span class="mobile-mini-title" id="mobile-mini-title">Arruinarlo Todo</span>
+            <span class="mobile-mini-artist" id="mobile-mini-artist">Molinette Cinema</span>
+        </div>
+        <button class="mobile-mini-play-btn" id="mobile-mini-play-btn" title="Reproducir / Pausar">
+            <i data-lucide="play" class="w-5 h-5" id="mobile-mini-play-icon"></i>
+        </button>
+        <button class="mobile-mini-expand-btn" id="mobile-mini-expand-btn" title="Maximizar Reproductor">
+            <i data-lucide="maximize-2" class="w-4 h-4"></i>
+        </button>
+    </div>
+
+    <!-- Barra de Navegación por Pestañas Inferiores en Móvil (Android) -->
+    <nav id="mobile-bottom-nav" class="mobile-bottom-nav" aria-label="Navegación móvil">
+        <button class="mobile-nav-btn active" data-tab="player" type="button" title="Reproductor">
+            <i data-lucide="music-2" class="w-5 h-5"></i>
+            <span>Reproductor</span>
+        </button>
+        <button class="mobile-nav-btn" data-tab="photos" type="button" title="Fotos">
+            <i data-lucide="image" class="w-5 h-5"></i>
+            <span>Fotos</span>
+        </button>
+        <button class="mobile-nav-btn" data-tab="songs" type="button" title="Canciones">
+            <i data-lucide="disc-3" class="w-5 h-5"></i>
+            <span>Canciones</span>
+        </button>
+        <button class="mobile-nav-btn" data-tab="letter" type="button" title="Carta">
+            <i data-lucide="mail" class="w-5 h-5"></i>
+            <span>Carta</span>
+        </button>
+    </nav>
+
+    <!-- Hoja Inferior (Bottom Sheet) para Notitas :) / Dedicatoria -->
+    <div id="mobile-lyrics-sheet" class="mobile-sheet-hidden">
+        <div class="mobile-sheet-backdrop" id="mobile-lyrics-backdrop"></div>
+        <div class="mobile-sheet-panel">
+            <div class="mobile-sheet-handle"></div>
+            <div class="mobile-sheet-header" style="justify-content: flex-end;">
+                <button class="mobile-sheet-close" id="mobile-close-lyrics-sheet">×</button>
+            </div>
+            <div class="mobile-sheet-song-header">
+                <img id="mobile-sheet-cover" src="imagenes/albumes/ArruinarloTodo.jpg" alt="Cover" onerror="this.src='https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=400'">
+                <div>
+                    <h3 id="mobile-sheet-title">Arruinarlo Todo</h3>
+                    <p id="mobile-sheet-artist">Molinette Cinema</p>
+                </div>
+            </div>
+            <div class="mobile-sheet-body" id="mobile-sheet-story-content">
+                <!-- Se llena dinámicamente con AppConfig.MODAL_STORIES -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Hoja Inferior / Drawer para la Biblioteca de Canciones (Playlist) -->
+    <div id="mobile-playlist-sheet" class="mobile-sheet-hidden">
+        <div class="mobile-sheet-backdrop" id="mobile-playlist-backdrop"></div>
+        <div class="mobile-sheet-panel mobile-playlist-panel">
+            <div class="mobile-sheet-handle"></div>
+            <div class="mobile-sheet-header">
+                <div class="mobile-sheet-tags">
+                    <span class="mobile-sheet-badge">🎶 Biblioteca de Canciones (24)</span>
+                </div>
+                <button class="mobile-sheet-close" id="mobile-close-playlist-sheet">×</button>
+            </div>
+            <div class="mobile-playlist-search-wrap">
+                <i data-lucide="search" class="w-4 h-4 mobile-pl-search-icon"></i>
+                <input type="text" id="mobile-pl-search-input" placeholder="Buscar canción o artista..." class="mobile-pl-search-input" autocomplete="off">
+            </div>
+            <div class="mobile-playlist-tabs">
+                <button class="mobile-pl-tab active" data-pl-filter="all">Todas (24)</button>
+                <button class="mobile-pl-tab" data-pl-filter="past">Pasado Pisado</button>
+                <button class="mobile-pl-tab" data-pl-filter="present">Ahoritita Mismo</button>
+            </div>
+            <div class="mobile-playlist-scroll" id="mobile-playlist-items-list">
+                <!-- Se llena dinámicamente con las 24 canciones -->
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
+

@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Arcade - Standalone</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; }
+        canvas { display: block; }
+        #ui-layer {
+            position: absolute; top: 20px; left: 20px; color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8); pointer-events: none;
+        }
+        h1 { margin: 0; font-size: 24px; color: #ff4d6d; }
+        p { margin: 5px 0; font-size: 16px; color: #ccc; }
+        #score { font-size: 20px; font-weight: bold; color: #4682B4; }
+        
+        #game-over-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); display: flex; flex-direction: column;
+            justify-content: center; align-items: center; color: white;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        #game-over-overlay.visible { opacity: 1; pointer-events: auto; }
+        button {
+            background: #ff4d6d; color: white; border: none; padding: 15px 30px;
+            font-size: 18px; border-radius: 8px; cursor: pointer; margin-top: 20px;
+            box-shadow: 0 4px 15px rgba(255, 77, 109, 0.4);
+        }
+        button:hover { transform: scale(1.05); background: #e04462; }
+    </style>
+</head>
+<body>
+
+<div id="ui-layer">
+    <h1>Aventura de Serpientes</h1>
+    <p>Mueve el mouse para guiar. Click para acelerar (futuro).</p>
+    <div id="score">Longitud: 10</div>
+</div>
+
+<div id="game-over-overlay">
+    <h1 style="font-size: 50px;">¡Has Muerto!</h1>
+    <p id="final-score" style="font-size: 24px;">Longitud Final: 0</p>
+    <button id="restart-btn">Jugar de Nuevo</button>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<script>
+/* --- CONFIGURACIÓN --- */
+const CONFIG = {
+    worldWidth: 3000,
+    worldHeight: 3000,
+    bots: 15,
+    foodCount: 800,
+    startLength: 10,
+    speed: 3.5, // Un poco más rápido para agilidad
+    turnSpeed: 0.09,
+    headRadius: 10, // Cabezas más grandes
+    bodyWidth: 20,  // Cuerpos más anchos
+    segmentDist: 6
+};
+
+const COLORS = [
+    '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#00FFFF', '#FF00FF', 
+    '#FF5733', '#33FF57', '#3357FF', '#F033FF', '#33FFF0', '#F0FF33'
+];
+
+/* --- SISTEMA DE JUEGO --- */
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const scoreEl = document.getElementById('score');
+const overlay = document.getElementById('game-over-overlay');
+const finalScoreEl = document.getElementById('final-score');
+
+let gameActive = true;
+let animationId;
+let player, bots = [], food = [], particles = [];
+let camera = { x: 0, y: 0 };
+let mouse = { x: window.innerWidth/2, y: window.innerHeight/2 };
+
+/* --- CLASES --- */
+class Particle {
+    constructor(x, y, color) {
+        this.x = x; this.y = y; this.color = color;
+        this.angle = Math.random() * Math.PI * 2;
+        this.speed = Math.random() * 5 + 2;
+        this.life = 1.0;
+        this.decay = Math.random() * 0.03 + 0.01;
+    }
+    update() {
+        this.x += Math.cos(this.angle) * this.speed;
+        this.y += Math.sin(this.angle) * this.speed;
+        this.life -= this.decay;
+    }
+    draw(ctx) {
+        ctx.globalAlpha = this.life;
+        ctx.fillStyle = this.color;
+        ctx.beginPath(); ctx.arc(this.x, this.y, 4, 0, Math.PI*2); ctx.fill();
+        ctx.globalAlpha = 1.0;
+    }
+}
+
+class Snake {
+    constructor(x, y, color, length, isPlayer = false, isBoss = false) {
+        this.x = x; this.y = y; this.color = color; 
+        this.maxLength = length; this.isPlayer = isPlayer; this.isBoss = isBoss;
+        this.angle = Math.random() * Math.PI * 2;
+        this.targetAngle = this.angle;
+        this.body = [];
+        this.isDead = false;
+        
+        // Propiedades visuales
+        this.width = isBoss ? CONFIG.bodyWidth * 2.5 : CONFIG.bodyWidth;
+        this.headRadius = isBoss ? CONFIG.headRadius * 2.0 : CONFIG.headRadius;
+        this.invulnerable = false;
+        this.invulnerableTime = 0;
+
+        // Inicializar cuerpo
+        for(let i=0; i<length; i++) {
+            this.body.push({ x: x - i*CONFIG.segmentDist, y: y });
+        }
+    }
+
+    setInvulnerable(ms) {
+        this.invulnerable = true;
+        this.invulnerableTime = Date.now() + ms;
+    }
+
+    update() {
+        if (this.isDead) return;
+
+        // Gestionar invulnerabilidad
+        if (this.invulnerable && Date.now() > this.invulnerableTime) this.invulnerable = false;
+
+        // IA o Control Jugador
+        if (this.isPlayer) {
+            const wx = mouse.x + camera.x;
+            const wy = mouse.y + camera.y;
+            this.targetAngle = Math.atan2(wy - this.body[0].y, wx - this.body[0].x);
+        } else {
+            this.updateAI();
+        }
+
+        // Suavizado de giro
+        let diff = this.targetAngle - this.angle;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        this.angle += diff * CONFIG.turnSpeed;
+
+        // Movimiento
+        const head = this.body[0];
+        const newHead = {
+            x: head.x + Math.cos(this.angle) * CONFIG.speed,
+            y: head.y + Math.sin(this.angle) * CONFIG.speed
+        };
+        this.body.unshift(newHead);
+
+        // Restricción de segmentos (física de serpiente)
+        for(let i=1; i<this.body.length; i++) {
+            const seg = this.body[i];
+            const prev = this.body[i-1];
+            const dx = prev.x - seg.x;
+            const dy = prev.y - seg.y;
+            const dist = Math.hypot(dx, dy);
+            if(dist > CONFIG.segmentDist) {
+                const a = Math.atan2(dy, dx);
+                seg.x = prev.x - Math.cos(a) * CONFIG.segmentDist;
+                seg.y = prev.y - Math.sin(a) * CONFIG.segmentDist;
+            }
+        }
+
+        // Cortar cola
+        while(this.body.length > this.maxLength) this.body.pop();
+    }
+
+    updateAI() {
+        // Lógica simple de IA: buscar comida, evitar colisiones
+        const head = this.body[0];
+        
+        // 1. Predicción de colisión frontal (Raycast simple)
+        const lookX = head.x + Math.cos(this.angle) * 100;
+        const lookY = head.y + Math.sin(this.angle) * 100;
+        
+        let danger = false;
+        
+        // Chequear bordes del mundo
+        if (lookX < 0 || lookX > CONFIG.worldWidth || lookY < 0 || lookY > CONFIG.worldHeight) danger = true;
+
+        // Chequear otras serpientes
+        if (!danger) {
+            for (const other of [player, ...bots]) {
+                if (other === this || other.isDead) continue;
+                // Optimización: distancia simple
+                if (Math.hypot(head.x - other.body[0].x, head.y - other.body[0].y) > 600) continue;
+
+                for (let i=0; i<other.body.length; i+=2) {
+                    const seg = other.body[i];
+                    if (Math.hypot(lookX - seg.x, lookY - seg.y) < (this.width + other.width)) {
+                        danger = true;
+                        break;
+                    }
+                }
+                if (danger) break;
+            }
+        }
+
+        if (danger) {
+            // Girar bruscamente
+            this.targetAngle += Math.PI / 1.5; 
+        } else {
+            // Buscar comida cercana
+            // (Simplificado para rendimiento: movimiento aleatorio con sesgo)
+            if (Math.random() < 0.05) {
+                this.targetAngle += (Math.random() - 0.5);
+            }
+        }
+    }
+
+    draw(ctx) {
+        if (this.isDead) return;
+        
+        const head = this.body[0];
+        if (!head) return;
+
+        // Efecto invulnerabilidad
+        ctx.globalAlpha = (this.invulnerable && Math.floor(Date.now()/100)%2===0) ? 0.5 : 1.0;
+
+        // Borde Blanco (Visibilidad garantizada)
+        ctx.lineWidth = this.width + 4;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = 'white';
+        ctx.beginPath();
+        ctx.moveTo(head.x, head.y);
+        for(let i=1; i<this.body.length; i++) ctx.lineTo(this.body[i].x, this.body[i].y);
+        ctx.stroke();
+
+        // Cuerpo Color
+        ctx.lineWidth = this.width;
+        ctx.strokeStyle = this.color;
+        ctx.beginPath();
+        ctx.moveTo(head.x, head.y);
+        for(let i=1; i<this.body.length; i++) ctx.lineTo(this.body[i].x, this.body[i].y);
+        ctx.stroke();
+
+        // Cabeza
+        ctx.fillStyle = this.color;
+        ctx.beginPath(); ctx.arc(head.x, head.y, this.headRadius, 0, Math.PI*2); ctx.fill();
+        
+        // Ojos
+        ctx.fillStyle = 'white';
+        const eyeOff = this.headRadius * 0.5;
+        const ex = head.x + Math.cos(this.angle + 0.5) * eyeOff;
+        const ey = head.y + Math.sin(this.angle + 0.5) * eyeOff;
+        const ex2 = head.x + Math.cos(this.angle - 0.5) * eyeOff;
+        const ey2 = head.y + Math.sin(this.angle - 0.5) * eyeOff;
+        
+        ctx.beginPath(); ctx.arc(ex, ey, this.headRadius*0.3, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(ex2, ey2, this.headRadius*0.3, 0, Math.PI*2); ctx.fill();
+        
+        ctx.fillStyle = 'black';
+        ctx.beginPath(); ctx.arc(ex, ey, this.headRadius*0.15, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(ex2, ey2, this.headRadius*0.15, 0, Math.PI*2); ctx.fill();
+        
+        // Corona Jefe
+        if (this.isBoss) {
+            ctx.strokeStyle = '#FFD700';
+            ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.arc(head.x, head.y, this.headRadius + 8, 0, Math.PI*2); ctx.stroke();
+        }
+
+        ctx.globalAlpha = 1.0;
+    }
+}
+
+/* --- LÓGICA CENTRAL --- */
+function initGame() {
+    // Ajustar canvas
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    
+    // Reiniciar estado
+    gameActive = true;
+    overlay.classList.remove('visible');
+    particles = [];
+    bots = [];
+    food = [];
+
+    // Crear Jugador
+    player = new Snake(CONFIG.worldWidth/2, CONFIG.worldHeight/2, '#00FFFF', CONFIG.startLength, true);
+    player.setInvulnerable(3000); // 3s inmortal
+
+    // Crear Jefes
+    bots.push(new Snake(100, 100, '#FFD700', 100, false, true)); // Jefe 1
+    bots.push(new Snake(CONFIG.worldWidth-100, CONFIG.worldHeight-100, '#FF0000', 100, false, true)); // Jefe 2
+
+    // Crear Bots normales
+    for(let i=0; i<CONFIG.bots; i++) {
+        spawnBot();
+    }
+
+    // Crear Comida
+    for(let i=0; i<CONFIG.foodCount; i++) {
+        food.push({
+            x: Math.random() * CONFIG.worldWidth,
+            y: Math.random() * CONFIG.worldHeight,
+            color: COLORS[Math.floor(Math.random()*COLORS.length)]
+        });
+    }
+    
+    animate();
+}
+
+function spawnBot() {
+    let x, y, dist;
+    // Intentar spawnear lejos del jugador
+    for(let i=0; i<5; i++) {
+        x = Math.random() * CONFIG.worldWidth;
+        y = Math.random() * CONFIG.worldHeight;
+        if (player) {
+            dist = Math.hypot(x - player.body[0].x, y - player.body[0].y);
+            if (dist > 800) break;
+        }
+    }
+    const color = COLORS[Math.floor(Math.random()*COLORS.length)];
+    const len = Math.floor(Math.random() * 50) + 20;
+    bots.push(new Snake(x, y, color, len));
+}
+
+function gameOver() {
+    gameActive = false;
+    finalScoreEl.textContent = `Longitud Final: ${Math.floor(player.maxLength)}`;
+    overlay.classList.add('visible');
+}
+
+function checkCollisions() {
+    const head = player.body[0];
+
+    // Paredes
+    if (head.x < 0 || head.x > CONFIG.worldWidth || head.y < 0 || head.y > CONFIG.worldHeight) {
+        if (!player.invulnerable) {
+            createExplosion(head.x, head.y, player.color);
+            gameOver();
+        } else {
+            // Rebote suave
+            if(head.x < 0) player.body.forEach(s => s.x += 20);
+            if(head.x > CONFIG.worldWidth) player.body.forEach(s => s.x -= 20);
+            if(head.y < 0) player.body.forEach(s => s.y += 20);
+            if(head.y > CONFIG.worldHeight) player.body.forEach(s => s.y -= 20);
+        }
+    }
+
+    // Comida
+    for(let i=food.length-1; i>=0; i--) {
+        const f = food[i];
+        if (Math.hypot(head.x - f.x, head.y - f.y) < (player.width + 10)) {
+            player.maxLength += 0.4; // Crecimiento
+            scoreEl.textContent = `Longitud: ${Math.floor(player.maxLength)}`;
+            // Respawn comida inmediato
+            food[i].x = Math.random() * CONFIG.worldWidth;
+            food[i].y = Math.random() * CONFIG.worldHeight;
+        }
+    }
+
+    // Choque con Bots
+    for (const bot of bots) {
+        if (bot.isDead) continue;
+        // Chequear colisión cabeza jugador con cuerpo bot
+        for (const seg of bot.body) {
+            if (Math.hypot(head.x - seg.x, head.y - seg.y) < (player.width/2 + bot.width/2)) {
+                if (!player.invulnerable) {
+                    createExplosion(head.x, head.y, player.color);
+                    gameOver();
+                }
+            }
+        }
+        // Chequear colisión cabeza bot con cuerpo jugador (Bot muere)
+        const botHead = bot.body[0];
+        for (const seg of player.body) {
+             if (Math.hypot(botHead.x - seg.x, botHead.y - seg.y) < (player.width/2 + bot.width/2)) {
+                 bot.isDead = true;
+                 createExplosion(botHead.x, botHead.y, bot.color);
+                 // Convertir bot en comida
+                 for(let k=0; k<bot.body.length; k+=3) {
+                     food.push({x: bot.body[k].x, y: bot.body[k].y, color: bot.color});
+                 }
+                 setTimeout(spawnBot, 2000); // Respawn nuevo bot
+             }
+        }
+    }
+}
+
+function createExplosion(x, y, color) {
+    for(let i=0; i<20; i++) particles.push(new Particle(x, y, color));
+}
+
+function drawWorld() {
+    // Fondo
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.save();
+    // Cámara sigue al jugador
+    camera.x = canvas.width/2 - player.body[0].x;
+    camera.y = canvas.height/2 - player.body[0].y;
+    
+    // Clamp cámara
+    camera.x = Math.min(0, Math.max(canvas.width - CONFIG.worldWidth, camera.x));
+    camera.y = Math.min(0, Math.max(canvas.height - CONFIG.worldHeight, camera.y));
+    
+    ctx.translate(camera.x, camera.y);
+
+    // Grid
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for(let x=0; x<=CONFIG.worldWidth; x+=100) { ctx.moveTo(x,0); ctx.lineTo(x, CONFIG.worldHeight); }
+    for(let y=0; y<=CONFIG.worldHeight; y+=100) { ctx.moveTo(0,y); ctx.lineTo(CONFIG.worldWidth, y); }
+    ctx.stroke();
+
+    // Bordes del mundo (NEON ROJO)
+    ctx.strokeStyle = '#ff0000';
+    ctx.lineWidth = 10;
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = 'red';
+    ctx.strokeRect(0,0, CONFIG.worldWidth, CONFIG.worldHeight);
+    ctx.shadowBlur = 0;
+
+    // Comida
+    for(const f of food) {
+        ctx.fillStyle = f.color;
+        ctx.beginPath(); ctx.arc(f.x, f.y, 6, 0, Math.PI*2); ctx.fill();
+    }
+
+    // Entidades
+    player.draw(ctx);
+    bots.forEach(b => {
+        if(!b.isDead) {
+            b.update();
+            b.draw(ctx);
+        }
+    });
+    particles.forEach((p, i) => {
+        p.update();
+        p.draw(ctx);
+        if(p.life <= 0) particles.splice(i, 1);
+    });
+
+    ctx.restore();
+}
+
+function animate() {
+    if (!gameActive) return;
+    player.update();
+    checkCollisions();
+    drawWorld();
+    requestAnimationFrame(animate);
+}
+
+/* --- EVENTOS --- */
+window.addEventListener('mousemove', e => {
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+});
+document.getElementById('restart-btn').addEventListener('click', initGame);
+window.addEventListener('resize', () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+});
+
+// Iniciar
+initGame();
+
+</script>
+</body>
+</html>

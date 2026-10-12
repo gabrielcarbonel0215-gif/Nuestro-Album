@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Horario de Clases - Sede Chiclayo</title>
+    <!-- Cargamos Tailwind CSS directamente para los estilos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Estilos para que la barra de desplazamiento parezca de Excel */
+        ::-webkit-scrollbar { width: 12px; height: 12px; }
+        ::-webkit-scrollbar-track { background: #f3f2f1; border: 1px solid #e1dfdd; }
+        ::-webkit-scrollbar-thumb { background: #c8c6c4; }
+        ::-webkit-scrollbar-thumb:hover { background: #a19f9d; }
+        
+        body { margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        .grid-container { flex: 1; overflow: auto; background-color: #e1dfdd; padding: 8px; }
+    </style>
+</head>
+<body class="bg-[#f3f2f1] font-sans text-[#323130]">
+
+    <!-- Cabecera estilo Excel -->
+    <div class="bg-[#107C41] text-white px-3 py-2 flex items-center gap-3 shadow-sm select-none shrink-0">
+        <div class="bg-[#185c37] p-1.5 rounded-sm">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" opacity=".3"/>
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <polyline points="14 2 14 8 20 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M8 13h8M8 17h8M10 9h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </div>
+        <span class="font-semibold text-sm tracking-wide">Horario_Sede_Chiclayo_2026.xlsx - Guardado</span>
+    </div>
+
+    <!-- Barra de Herramientas (Ribbon) -->
+    <div class="bg-white border-b border-[#d4d4d4] px-4 py-2 flex items-center gap-6 text-sm select-none shrink-0 overflow-x-auto">
+        <span class="font-medium text-[#107C41] border-b-2 border-[#107C41] pb-1 whitespace-nowrap">Inicio</span>
+        <span class="text-[#605e5c] hover:text-black cursor-pointer whitespace-nowrap">Insertar</span>
+        <span class="text-[#605e5c] hover:text-black cursor-pointer whitespace-nowrap">Disposición de página</span>
+        <span class="text-[#605e5c] hover:text-black cursor-pointer whitespace-nowrap">Fórmulas</span>
+        <span class="text-[#605e5c] hover:text-black cursor-pointer whitespace-nowrap">Datos</span>
+    </div>
+
+    <!-- Barra de Fórmulas -->
+    <div class="bg-white border-b border-[#d4d4d4] flex items-center px-3 py-1 shadow-sm select-none shrink-0">
+        <div class="w-16 text-center font-semibold text-xs border-r border-[#d4d4d4] text-[#605e5c]">A1</div>
+        <div class="px-3 flex-1 flex items-center gap-2">
+            <span class="italic text-[#a19f9d] font-serif text-lg leading-none">fx</span>
+            <div class="w-full h-6 border border-[#d4d4d4] flex items-center px-2 text-sm bg-white font-mono text-slate-600">
+                =BUSCARV(Horario_Mixto; Universidad_Trabajo_Practicas)
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenedor Principal de la Cuadrícula -->
+    <div class="grid-container" id="excel-workspace">
+        <!-- El contenido se generará dinámicamente con JavaScript -->
+    </div>
+
+    <!-- Barra de Estado Inferior -->
+    <div class="bg-[#f3f2f1] border-t border-[#d4d4d4] px-3 py-1 text-xs text-[#605e5c] flex justify-between select-none shrink-0">
+        <div class="flex gap-4">
+            <span class="hover:text-black cursor-pointer">Listo</span>
+        </div>
+        <div class="flex gap-4 items-center">
+            <span>100%</span>
+            <div class="w-16 h-1.5 bg-[#c8c6c4] rounded-full overflow-hidden">
+                <div class="w-1/2 h-full bg-[#107C41]"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DATOS DEL HORARIO (Clases) ---
+        const scheduleData = [
+            { asignatura: 'DEONTOLOGÍA JURÍDICA', grupo: 'eL-AT1', docente: 'HUAMANI MUÑOZ, JAVIER', ambiente: 'Virtual', dia: 'Lunes', inicio: '6:50PM', fin: '8:30PM', bgColor: 'bg-[#C6E0B4]', textColor: 'text-[#375623]' },
+            { asignatura: 'INVESTIGACIÓN I', grupo: 'ET1', docente: 'CABRERA CABRERA, XIOMARA', ambiente: 'Virtual', dia: 'Martes', inicio: '6:50PM', fin: '10:10PM', bgColor: 'bg-[#FFE699]', textColor: 'text-[#833C0C]' },
+            { asignatura: 'PRÁCT. PRE PROFESIONALES II', grupo: 'DT1', docente: 'LESCANO NAVARRO, AMELIA', ambiente: 'A-207', dia: 'Miércoles', inicio: '5:10PM', fin: '6:50PM', bgColor: 'bg-[#B4C6E7]', textColor: 'text-[#1F4E78]' },
+            { asignatura: 'PRÁCT. PRE PROFESIONALES II', grupo: 'DP1', docente: 'LESCANO NAVARRO, AMELIA', ambiente: 'A-207', dia: 'Miércoles', inicio: '6:50PM', fin: '10:10PM', bgColor: 'bg-[#F8CBAD]', textColor: 'text-[#833C0C]' },
+            { asignatura: 'FUND. DEL COMERCIO EXT.', grupo: 'BT1', docente: 'RODRIGUEZ LAFITTE, ERNESTO', ambiente: 'A-410', dia: 'Jueves', inicio: '3:30PM', fin: '6:00PM', bgColor: 'bg-[#E2EFDA]', textColor: 'text-[#375623]' },
+            { asignatura: 'INTEGRACIÓN PENAL', grupo: 'CT1', docente: 'AREVALO INFANTE, ELENA', ambiente: 'A-201', dia: 'Jueves', inicio: '6:00PM', fin: '9:20PM', bgColor: 'bg-[#FCE4D6]', textColor: 'text-[#C65911]' },
+            { asignatura: 'INTEGRACIÓN CIVIL', grupo: 'BT1', docente: 'BARRIO DE MENDOZA VASQUEZ', ambiente: 'A-304', dia: 'Viernes', inicio: '6:50PM', fin: '10:10PM', bgColor: 'bg-[#D9E1F2]', textColor: 'text-[#305496]' }
+        ];
+
+        // --- DATOS DEL TRABAJO ---
+        const diasTrabajo = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+        diasTrabajo.forEach(dia => {
+            scheduleData.push({
+                asignatura: 'TRABAJO',
+                grupo: 'Laboral',
+                docente: 'Jornada Laboral',
+                ambiente: 'Trabajo',
+                dia: dia,
+                inicio: '8:00AM',
+                fin: '12:00PM',
+                bgColor: 'bg-[#D9D9D9]', 
+                textColor: 'text-[#595959]'
+            });
+        });
+
+        // --- NUEVA RECOMENDACIÓN: HORAS DE PRÁCTICAS EXTRA (8 Horas) ---
+        // Sugerencia: 4 horas el Lunes y 4 horas el Martes en el "hueco" de la tarde
+        scheduleData.push({
+            asignatura: 'PRÁCTICAS EXTRA (4H)',
+            grupo: 'Prácticas',
+            docente: 'Centro de Prácticas',
+            ambiente: 'Por definir',
+            dia: 'Lunes',
+            inicio: '2:00PM',
+            fin: '6:00PM',
+            bgColor: 'bg-[#DDEBF7]', // Azul suave estilo Excel
+            textColor: 'text-[#2F75B5]'
+        });
+        
+        scheduleData.push({
+            asignatura: 'PRÁCTICAS EXTRA (4H)',
+            grupo: 'Prácticas',
+            docente: 'Centro de Prácticas',
+            ambiente: 'Por definir',
+            dia: 'Martes',
+            inicio: '2:00PM',
+            fin: '6:00PM',
+            bgColor: 'bg-[#DDEBF7]',
+            textColor: 'text-[#2F75B5]'
+        });
+
+        const diasSemana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+
+        // Función para convertir horas ("6:50PM") a un número base (minutos) y poder ordenarlas matemáticamente
+        function parseTimeToMins(timeStr) {
+            const isPM = timeStr.includes('PM');
+            let [h, m] = timeStr.replace('AM', '').replace('PM', '').trim().split(':').map(Number);
+            if (h === 12) h = isPM ? 12 : 0; // Manejar el medio día y la medianoche
+            else if (isPM) h += 12; // Convertir PM a formato 24h
+            return (h * 60) + m;
+        }
+
+        function renderGrid() {
+            const workspace = document.getElementById('excel-workspace');
+            
+            // 1. Extraer todas las horas exactas donde inician o terminan cosas
+            const timesSet = new Set();
+            scheduleData.forEach(c => {
+                timesSet.add(c.inicio);
+                timesSet.add(c.fin);
+            });
+            // Ordenar las horas desde temprano en la mañana hasta la noche
+            const uniqueTimes = Array.from(timesSet).sort((a, b) => parseTimeToMins(a) - parseTimeToMins(b));
+
+            // 2. Crear los intervalos de "Filas" basados puramente en tus tiempos específicos
+            const intervals = [];
+            for(let i = 0; i < uniqueTimes.length - 1; i++){
+                intervals.push({ start: uniqueTimes[i], end: uniqueTimes[i+1] });
+            }
+
+            // 3. Matriz para almacenar cómo se dibujará la tabla de Excel (Manejo de celdas combinadas)
+            const matrix = Array(intervals.length).fill(null).map(() => Array(diasSemana.length).fill(null));
+
+            // 4. Ubicar cada bloque en la matriz
+            scheduleData.forEach(clase => {
+                const dayIdx = diasSemana.indexOf(clase.dia);
+                if (dayIdx === -1) return;
+
+                const startRow = uniqueTimes.indexOf(clase.inicio);
+                const endRow = uniqueTimes.indexOf(clase.fin);
+
+                if (startRow !== -1 && endRow !== -1 && endRow > startRow) {
+                    const rowspan = endRow - startRow;
+                    // Registrar el punto de inicio
+                    matrix[startRow][dayIdx] = { type: 'class', data: clase, rowspan: rowspan };
+                    // Registrar las celdas que serán tapadas (combinadas) por el bloque principal
+                    for (let i = startRow + 1; i < endRow; i++) {
+                        matrix[i][dayIdx] = { type: 'merged' };
+                    }
+                }
+            });
+
+            // 5. Generar la estructura de la tabla (Como una celda nativa de Excel)
+            let html = `<div class="inline-block bg-white shadow-sm border border-[#c8c6c4]">`;
+            html += `<table class="border-collapse select-none" style="table-layout: fixed; min-width: 1000px;">`;
+            
+            // --- CABECERA DE LA TABLA (A, B, C...) ---
+            html += `<thead class="bg-[#f3f2f1] sticky top-0 z-20 shadow-sm"><tr>`;
+            // Esquina superior izquierda
+            html += `<th class="w-20 border border-[#c8c6c4] bg-[#e1dfdd] p-0 relative min-w-[80px]">
+                        <span class="absolute right-0 bottom-0 w-0 h-0 border-l-[8px] border-l-transparent border-t-[8px] border-t-transparent border-r-[8px] border-r-[#a19f9d] border-b-[8px] border-b-[#a19f9d] opacity-50"></span>
+                     </th>`;
+            
+            diasSemana.forEach((dia, index) => {
+                const letra = String.fromCharCode(65 + index); // A, B, C...
+                html += `<th class="w-44 border border-[#c8c6c4] font-normal py-1.5 px-2 hover:bg-[#e1dfdd] cursor-pointer">
+                    <div class="text-[#323130] text-sm">${letra}</div>
+                    <div class="text-xs font-semibold text-[#605e5c]">${dia}</div>
+                </th>`;
+            });
+            html += `</tr></thead>`;
+
+            // --- CUERPO DE LA TABLA ---
+            html += `<tbody>`;
+            intervals.forEach((interval, rowIdx) => {
+                html += `<tr>`;
+                
+                // Columna izquierda de Horas (1, 2, 3...) y Tiempos específicos
+                html += `<td class="border border-[#c8c6c4] bg-[#f3f2f1] text-center hover:bg-[#e1dfdd] cursor-pointer align-top py-2 px-1 w-20">
+                    <div class="text-[#323130] text-xs font-bold mb-1">${rowIdx + 1}</div>
+                    <div class="text-[10px] text-[#605e5c] font-medium leading-[1.2]">
+                        ${interval.start.replace('AM', ' AM').replace('PM', ' PM')}<br>
+                        <span class="text-[8px] opacity-70">a</span><br>
+                        ${interval.end.replace('AM', ' AM').replace('PM', ' PM')}
+                    </div>
+                </td>`;
+
+                // Celdas por cada día
+                diasSemana.forEach((dia, colIdx) => {
+                    const cell = matrix[rowIdx][colIdx];
+                    
+                    if (!cell) {
+                        // Espacio Libre / Hueco sin clase
+                        html += `<td class="border border-[#e1dfdd] hover:bg-slate-50/50 transition-colors relative h-[70px]"></td>`;
+                    } else if (cell.type === 'class') {
+                        // Bloque de Asignatura o Trabajo (Usa rowspan para extenderse si abarca varios intervalos)
+                        const c = cell.data;
+                        html += `
+                        <td rowspan="${cell.rowspan}" class="border border-[#a19f9d] p-1.5 align-top relative group transition-all h-[70px] ${c.bgColor} ${c.textColor}">
+                            <div class="absolute inset-0 border-2 border-transparent group-hover:border-[#107C41] pointer-events-none z-10"></div>
+                            
+                            <div class="flex flex-col h-full">
+                                <div class="flex justify-between items-start mb-1">
+                                    <span class="text-[10px] font-bold bg-white/50 px-1 rounded-sm border border-black/5">${c.grupo}</span>
+                                </div>
+                                <h3 class="font-bold text-xs leading-tight mb-1.5 tracking-tight">${c.asignatura}</h3>
+                                
+                                <div class="mt-auto space-y-0.5 opacity-90">
+                                    <div class="text-[10px] flex items-center gap-1 font-medium bg-white/40 px-1 rounded-sm w-fit border border-black/5">
+                                        Loc: ${c.ambiente}
+                                    </div>
+                                    <div class="text-[10px] leading-tight" title="${c.docente}">
+                                        ${c.docente}
+                                    </div>
+                                </div>
+                            </div>
+                        </td>`;
+                    }
+                    // Si el tipo es 'merged', no colocamos ningún <td> porque la celda de arriba se extendió para cubrirlo
+                });
+                
+                html += `</tr>`;
+            });
+            html += `</tbody></table></div>`;
+
+            workspace.innerHTML = html;
+        }
+
+        // Ejecutar al iniciar
+        renderGrid();
+    </script>
+</body>
+</html>

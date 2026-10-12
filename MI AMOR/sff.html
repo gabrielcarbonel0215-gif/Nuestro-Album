@@ -1,0 +1,2529 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nuestro Álbum de Recuerdos</title>
+    <!-- [LIBRERÍAS] -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    
+<style>
+/* --- ESTILOS GLOBALES --- */
+:root {
+    --color-principal: #4682B4; 
+    --color-acento: #ff4d6d;
+    --color-texto-claro: #fff;
+    --color-texto-oscuro: #333;
+    --font-family: 'Segoe UI', sans-serif;
+    --game-bg: #2c3e50;
+    --game-ui-bg: rgba(0, 0, 0, 0.6);
+    
+    /* Variables de Diseño Dinámico */
+    --scrollbar-radius: 0px;
+    --btn-list-x: -101px;
+    --btn-list-y: 46px;
+    --scrollbar-thumb-min-height: 46px;
+
+    /* Variables Visuales Playlist */
+    --pl-sel-color: #000000;
+    --pl-sel-opacity: 0.15;
+    --pl-hover-scale: 1.2;
+    --pl-anim-dur: 0.05s;
+}
+
+* { box-sizing: border-box; }
+body.no-scroll { overflow: hidden; }
+
+/* Cursores personalizados */
+.interactable { cursor: url('imagenes/cursores/cinnamoroll_pointer.png'), pointer !important; }
+.draggable { cursor: url('imagenes/cursores/cinnamoroll_grab.png'), grab !important; }
+.draggable:active { cursor: url('imagenes/cursores/cinnamoroll_grabbing.png'), grabbing !important; }
+
+body {
+    font-family: var(--font-family);
+    margin: 0; padding: 0;
+    background-color: #f0f0f0; 
+    color: var(--color-texto-oscuro); 
+    text-align: center;
+    overflow-x: hidden;
+    position: relative;
+    cursor: url('imagenes/cursores/cinnamoroll_default.png'), default; 
+}
+
+/* Fondo Fijo con Filtros */
+#page-background {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    z-index: -10;
+    background-image: url('imagenes/fondos/fondo.jpg');
+    background-size: cover; background-position: center; background-repeat: no-repeat;
+    filter: saturate(1) opacity(1) blur(0px);
+    transition: filter 0.1s linear;
+}
+
+/* Modo Diseño */
+body.design-mode .card { border: 2px dashed #00f2fe !important; animation: pulse-border 2s infinite; }
+body.design-mode .card:hover { border-color: #ff4d6d !important; cursor: alias !important; transform: scale(1.02); }
+@keyframes pulse-border {
+    0% { border-color: #00f2fe; box-shadow: 0 0 5px rgba(0, 242, 254, 0.5); }
+    50% { border-color: rgba(0, 242, 254, 0.3); box-shadow: 0 0 0 rgba(0,0,0,0); }
+    100% { border-color: #00f2fe; box-shadow: 0 0 5px rgba(0, 242, 254, 0.5); }
+}
+
+.main-content-wrapper { max-width: 1300px; margin: 0 auto; padding: 0 20px; }
+
+/* --- REPRODUCTOR --- */
+#player-wrapper { 
+    position: fixed; bottom: 44px; right: 44px; z-index: 5000;
+    --scale: 0.65; 
+    --bt-t: 59%; --bt-r: 187px; 
+    --xt-t: 114px; --xt-r: 154px; 
+    --w-b-exp: 30px; --w-r-exp: 0px; 
+    --tr-sw: 5px;
+    
+    /* Variable dinámica para el deslizamiento del Estado 3 */
+    --state3-slide-amount: 130px; 
+
+    transform: scale(var(--scale)); transform-origin: bottom right;
+    transition: bottom 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), 
+                right 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+                transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+#player-wrapper.expanded-state { bottom: var(--w-b-exp) !important; right: var(--w-r-exp) !important; }
+
+/* COMPORTAMIENTO LISTA VISIBLE (ESTADO 3): Desplaza el reproductor hacia arriba usando la variable dinámica */
+#player-wrapper.playlist-visible {
+    /* Base expandida + Altura de deslizamiento definida */
+    bottom: calc(var(--w-b-exp) + var(--state3-slide-amount)) !important; 
+}
+
+.expand-trigger { 
+    position: absolute; top: var(--bt-t); right: var(--bt-r); transform: translateY(-50%); 
+    cursor: pointer; color: #000; z-index: 60; transition: all 0.4s ease;
+    background: transparent; border-radius: 50%; width: 40px; height: 40px;
+    display: flex; align-items: center; justify-content: center;
+}
+.expand-trigger:hover { transform: translateY(-50%) scale(1.1); color: #333; filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.8)); }
+.expanded-state .expand-trigger { 
+    right: var(--xt-r); top: var(--xt-t); width: 35px; height: 35px;
+    background: transparent; border: none; color: #fff; transform: none; z-index: 100;
+}
+.expanded-state .expand-trigger i { display: block; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5)); } 
+
+#player { 
+    position: relative; 
+    transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    /* Aseguramos que el reproductor esté visualmente encima de la lista */
+    z-index: 20; 
+}
+
+/* Modo Burbuja */
+.mode-bubble { 
+    width: 150px; height: 150px; border-radius: 50%; cursor: pointer;
+    background: rgba(224, 242, 254, 0.45); backdrop-filter: blur(25px); 
+    border: 1px solid rgba(255, 255, 255, 0.6); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); 
+}
+
+/* Modo Expandido */
+.mode-expanded { 
+    width: 780px; height: 273px; border-radius: 0; cursor: default;
+    background: rgba(224, 242, 254, 0); backdrop-filter: blur(0px);
+    border: 1px solid rgba(255, 255, 255, 0); 
+    filter: drop-shadow(0 10px 20px rgba(0,0,0,0.2));
+    display: flex; align-items: center; justify-content: center;
+}
+
+.player-expanded-bg {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background-image: url('imagenes/marcos/reproductor_tema.png');
+    background-size: 100% 100%; background-repeat: no-repeat; background-position: center;
+    opacity: 0; pointer-events: none; transition: opacity 0.3s ease; z-index: 1; border-radius: inherit;
+}
+.mode-expanded .player-expanded-bg { opacity: 1; transition: opacity 0.5s ease; }
+
+.album-container { 
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 150px; height: 150px; transition: opacity 0.2s ease; opacity: 1; pointer-events: auto; z-index: 5;
+}
+.mode-expanded .album-container { opacity: 0; pointer-events: none; }
+
+.album-inner { 
+    width: 100%; height: 100%; border-radius: 50%; overflow: hidden; 
+    position: relative; box-shadow: 0 15px 30px rgba(0,0,0,0.3); z-index: 5; 
+}
+.marco { position: absolute; pointer-events: none; transition: opacity .3s; }
+#marco-img { inset: 0; width: 100%; height: 100%; object-fit: contain; z-index: 20; }
+#m-e1, #m-e2 { object-fit: fill; opacity: 0; top: 50%; left: 50%; position: absolute; z-index: 21; }
+#m-e2 { z-index: 22; }
+
+#album-img { transition: filter .3s; width: 100%; height: 100%; object-fit: cover; }
+.mode-bubble:hover #album-img { filter: brightness(0.85); }
+.b-play { 
+    position: absolute; inset: 0; margin: auto; opacity: 0; transition: .3s; z-index: 40; 
+    display: flex; align-items: center; justify-content: center; color: rgba(3,105,161,0.85); 
+    filter: drop-shadow(0 2px 4px rgba(255,255,255,0.8)); pointer-events: auto;
+}
+.mode-bubble:hover .b-play { opacity: 1; }
+.spinning { animation: spin 25s linear infinite; }
+@keyframes spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+
+/* Contenido Interno Expandido */
+.expanded-content-wrapper {
+    position: absolute; width: 100%; height: 100%; opacity: 0; pointer-events: none; 
+    transition: opacity 0.1s ease; z-index: 10;
+}
+.mode-expanded .expanded-content-wrapper { opacity: 1; pointer-events: auto; transition: opacity 0.4s 0.1s ease; }
+
+.frame-album-art { 
+    top: 120px; left: 137px; width: 142px; height: 142px; position: absolute;
+    border-radius: 50%; object-fit: cover; box-shadow: inset 0 0 20px rgba(0,0,0,0.2); z-index: 10;
+}
+.frame-controls-area { 
+    top: 109px; left: 284px; width: 301px; position: absolute; height: 110px;
+    display: flex; flex-direction: column; justify-content: center; padding: 0 20px; z-index: 10;
+}
+#track-title { position: absolute; top: 7px; left: 0px; width: 216px; text-align: left; }
+.bar-progress-wrapper { position: absolute; top: 58px; left: 13px; width: 100%; margin-bottom: 0; }
+#prev-btn { position: absolute; top: 91px; left: 110px; }
+#p-main { position: absolute; top: 78px; left: 146px; }
+#next-btn { position: absolute; top: 91px; left: 204px; }
+#dir-btn { position: absolute; top: 91px; left: 282px; z-index: 50; }
+
+/* ESTILOS NUEVOS: Contenedor Lista */
+#playlist-container {
+    width: 475px;
+    height: 273px;
+    position: absolute;
+    top: 100%; /* Posiciona debajo del reproductor visualmente */
+    left: 0;
+    margin-bottom: 0px; 
+    
+    /* Jerarquía visual: Debajo del reproductor */
+    z-index: 10;
+
+    /* Estado Oculto (Default) */
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-20px);
+    pointer-events: none;
+    transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Estado Visible (Activado por clase en wrapper) */
+.playlist-visible #playlist-container {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+/* --- NUEVA ESTRUCTURA WRAPPER MANUAL --- */
+#playlist-manual-wrapper {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    transform: translate(167px, -48px);
+    pointer-events: none; 
+}
+
+/* IMAGEN DE FONDO SEPARADA */
+#playlist-background {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-image: url('imagenes/UI/lista_expandible.png');
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    background-position: center;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* ESTILOS PARA EL CONTENIDO INTERNO DE LA LISTA */
+#playlist-content-overlay {
+    position: absolute;
+    top: 56px;
+    left: 15px;
+    width: 448px;
+    height: 198px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: transparent;
+    z-index: 6;
+    padding-right: 0px;
+    pointer-events: auto; 
+}
+#playlist-content-overlay::-webkit-scrollbar { width: 17px; }
+#playlist-content-overlay::-webkit-scrollbar-track { 
+    background: #f0f0f0; 
+    border-left: 1px solid #d9d9d9; 
+    border-radius: var(--scrollbar-radius); 
+}
+#playlist-content-overlay::-webkit-scrollbar-thumb { 
+    background-color: #cdcdcd; 
+    border: 1px solid #f0f0f0;
+    border-radius: var(--scrollbar-radius);
+    box-shadow: inset 1px 1px 0 white, inset -1px -1px 0 #888;
+    min-height: var(--scrollbar-thumb-min-height);
+}
+#playlist-content-overlay::-webkit-scrollbar-thumb:hover { background-color: #a6a6a6; }
+
+/* Botón toggle lista posicionado */
+#toggle-list-btn {
+    transform: translate(var(--btn-list-x), var(--btn-list-y));
+    color: #ffffff !important;
+    position: relative;
+    z-index: 100;
+}
+#toggle-list-btn svg {
+    stroke-width: 3px;
+}
+
+.playlist-static-item {
+    padding: 6px 4px;
+    color: #333; 
+    font-size: 13px;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 10px; 
+    text-shadow: none;
+    user-select: none;
+    position: relative;
+    z-index: 2;
+    overflow: hidden; 
+    /* Nuevas transiciones */
+    transition: transform var(--pl-anim-dur) ease, background-color var(--pl-anim-dur) ease;
+    border-radius: 4px;
+    transform-origin: center left;
+}
+
+/* Hover State (No seleccionado) */
+.playlist-static-item:not(.selected):hover {
+    transform: scale(var(--pl-hover-scale));
+    background-color: rgba(0,0,0,0.02);
+}
+
+/* Selected State */
+.playlist-static-item.selected {
+    font-weight: 600; /* Mejor legibilidad */
+    z-index: 3;
+}
+
+/* EFECTO DE SELECCIÓN (Gradiente Oscuro Sutil) */
+.playlist-static-item.selected::before {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    /* Gradiente dinámico */
+    background: linear-gradient(90deg, var(--pl-sel-color) 0%, transparent 100%);
+    opacity: var(--pl-sel-opacity);
+    pointer-events: none;
+    z-index: -1; 
+    transition: opacity var(--pl-anim-dur) ease;
+}
+
+/* Selected + Hover */
+.playlist-static-item.selected:hover {
+    transform: scale(var(--pl-hover-scale));
+}
+
+.playlist-static-item span { text-align: left; }
+
+.playlist-static-sep {
+    width: 100%; height: 1px; background: rgba(0, 0, 0, 0.1); margin: 0; position: relative; z-index: 1;
+}
+
+.calibration-mode .frame-controls-area { display: block !important; border: 1px dashed rgba(255, 255, 0, 0.5); }
+.calibration-mode #track-title, .calibration-mode .bar-progress-wrapper, .calibration-mode #prev-btn, .calibration-mode #p-main, .calibration-mode #next-btn, .calibration-mode #dir-btn {
+    position: absolute; background: rgba(255, 0, 0, 0.3) !important; outline: 2px solid red !important; z-index: 200;
+}
+
+.bar-title { display: flex; flex-direction: column; justify-content: center; position: relative; width: 100%; }
+#song-name { color: #ffffff; font-weight: 600; font-size: 1.3em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.1; width: 100%; text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
+#artist-name { display: none; }
+
+.bar-progress-track { width: 100%; height: 8px; background: rgba(0,0,0,0.1); border-radius: 4px; cursor: pointer; position: relative; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.2); }
+.bar-progress-fill { height: 100%; background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%); width: 0%; border-radius: 4px; transition: width 0.1s linear;}
+.bar-time { font-size: 11px; color: #555; font-weight: 700; display: flex; justify-content: space-between; margin-top: 3px; }
+
+.bar-buttons { display: flex; align-items: center; justify-content: center; gap: 25px; position: static; }
+.bar-btn-mini { color: #fff; cursor: pointer; transition: transform 0.2s; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.8)); position: relative; opacity: 0.9; }
+.bar-btn-mini:hover { transform: scale(1.15); color: #e0f2ff; opacity: 1; }
+.bar-play-circle {
+    width: 45px; height: 45px; background: linear-gradient(180deg, #8dc0f2 0%, #2b68c6 50%, #1e4b9e 100%);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.4), inset 0 1px 2px rgba(255,255,255,0.8), inset 0 -1px 2px rgba(0,0,0,0.3);
+    cursor: pointer; transition: transform 0.2s, background 0.2s; border: 2px solid #fff; position: relative;
+}
+.bar-play-circle:hover { transform: scale(1.1); background: linear-gradient(180deg, #a3d1ff 0%, #3a7be0 50%, #2a5bb5 100%); }
+
+/* --- INTRO OVERLAY --- */
+#intro-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.4); 
+    backdrop-filter: blur(4px); z-index: 9999; display: flex; justify-content: center; align-items: center;
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+    opacity: 1; visibility: visible; /* Default visible */
+}
+/* Estilo crítico para que la transición funcione sobre Tailwind .hidden */
+#intro-overlay.hidden { 
+    opacity: 0; 
+    visibility: hidden; 
+    pointer-events: none;
+    display: flex !important; /* Mantiene el layout para la transición de opacidad */
+}
+
+#envelope-stage { display: flex; justify-content: center; align-items: center; transition: opacity 0.5s ease; z-index: 10001; }
+#envelope-img { width: 300px; max-width: 80vw; transition: transform 0.3s; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.3)); cursor: pointer; }
+.shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+.envelope-idle:hover { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+
+@keyframes shake {
+    10%, 90% { transform: translate3d(-1px, 0, 0) rotate(-1deg); }
+    20%, 80% { transform: translate3d(2px, 0, 0) rotate(2deg); }
+    30%, 50%, 70% { transform: translate3d(-4px, 0, 0) rotate(-4deg); }
+    40%, 60% { transform: translate3d(4px, 0, 0) rotate(4deg); }
+}
+.hidden-stage { display: none !important; opacity: 0; }
+
+.letter-container {
+    background: #fdfbf7; width: 90%; max-width: 756px; min-height: 60vh; padding: 0; border-radius: 5px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3); text-align: left; position: relative; border: 1px solid #e0e0e0;
+    background-image: linear-gradient(#fdfbf7 23px, #e0e0e0 24px); background-size: 100% 24px; line-height: 24px;
+    font-family: 'Georgia', serif; color: #444; overflow: visible !important; max-height: 90vh; cursor: default;
+    transition: transform 0.2s ease, opacity 0.8s ease; display: flex; flex-direction: column;
+}
+.letter-container:hover { transform: scale(1.01); box-shadow: 0 12px 35px rgba(0,0,0,0.4); }
+.letter-scroll-wrapper { width: 100%; height: 100%; overflow-y: auto; padding: 60px 80px; position: relative; z-index: 10; scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.1) transparent; }
+.letter-scroll-wrapper::-webkit-scrollbar { width: 6px; }
+.letter-scroll-wrapper::-webkit-scrollbar-track { background: transparent; }
+.letter-scroll-wrapper::-webkit-scrollbar-thumb { background-color: rgba(0,0,0,0.1); border-radius: 20px; }
+#letter-frame { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; object-fit: fill; }
+.letter-content { font-size: 1.1em; margin-bottom: 10px; background: rgba(253, 251, 247, 0.85); white-space: pre-line; }
+.letter-content p { margin-top: 0; margin-bottom: 12px; }
+
+#open-letter-btn {
+    width: 90px; height: 90px; background: transparent; border: none; box-shadow: none; display: flex;
+    justify-content: center; align-items: center; align-self: center; z-index: 10; padding: 0;
+    transition: transform 0.3s; cursor: pointer; margin: 0;
+}
+#open-letter-btn img { width: 100%; height: 100%; object-fit: contain; display: block; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); }
+#open-letter-btn:hover { transform: scale(1.15) rotate(5deg); }
+
+/* --- Partículas --- */
+#particles-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: -1; overflow: hidden; }
+.particle { position: absolute; background: rgba(173, 216, 230, 0.8); border-radius: 50%; animation: float var(--duration) infinite ease-in-out; }
+@keyframes float {
+    0% { transform: translate(0, 0); opacity: 0.8; }
+    50% { transform: translate(var(--translateX), var(--translateY)); opacity: 0.5; }
+    100% { transform: translate(0, 0); opacity: 0.8; }
+}
+
+/* --- Layout --- */
+.bloque-superior { display: block; width: 100%; margin: 0; padding: 20px 0 0 0; }
+.rectangulo-izquierdo { width: 100%; display: flex; justify-content: center; align-items: flex-start; min-height: 50px; padding: 20px 0; }
+.time-counter-box {
+    display: flex; flex-direction: column; align-items: center; font-size: 1.2em; color: var(--color-texto-claro);
+    font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.7); padding: 20px; background: rgba(0, 0, 0, 0.25);
+    border-radius: 8px; backdrop-filter: blur(5px); width: 33.33%;
+}
+.time-counter-box > span:first-child { font-weight: bold; color: var(--color-texto-claro); }
+.time-counter-box > span:nth-child(2) { font-size: 1.5em; color: var(--color-texto-claro); font-weight: 900; }
+.time-counter-box > div { font-size: 0.8em; font-weight: normal; margin-top: 5px; color: #ccc; }
+
+.carousel-wrapper-flex {
+    display: grid; grid-template-columns: 1fr minmax(500px, 1600px) 1fr; align-items: flex-start;
+    gap: 20px; margin-top: 20px; width: 85%; max-width: 1800px; margin-left: auto; margin-right: auto;
+}
+#open-letter-btn, .calendar-game-block { justify-self: center; }
+.carousel-center-block { display: flex; flex-direction: column; align-items: center; width: 100%; }
+
+.carousel-container {
+    width: 100%; height: 340px; position: relative; background: rgba(0, 0, 0, 0.25); backdrop-filter: blur(5px);
+    border-radius: 12px; padding: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); overflow: hidden;
+}
+/* UPDATE: Fondo del carrusel (Base Plate) */
+.carousel-bg-layer {
+    position: absolute; top: 50%; left: 50%; width: 115%; height: 115%; 
+    transform: translate(-50%, -50%) translate(-1px, -16px); 
+    background-size: cover; background-position: 50% 50%;
+    background-image: url('imagenes/marcos/Carrusel_Centro.png');
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: inherit; z-index: 0; opacity: 0; transition: opacity 0.5s ease; pointer-events: none;
+}
+.carousel-bg-layer.active { opacity: 1; }
+.slide-group {
+    position: absolute; top: 10px; left: 10px; width: calc(100% - 20px); height: calc(100% - 20px);
+    display: flex; justify-content: center; align-items: center; gap: 10px; opacity: 0; pointer-events: none;
+    transform: scale(0.95); transition: opacity 0.6s ease, transform 0.6s ease; z-index: 2;
+}
+.slide-group.active { opacity: 1; pointer-events: auto; transform: scale(1); z-index: 3; }
+.slide-photo { width: 48%; height: 100%; object-fit: cover; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+
+.carousel-arrow {
+    position: absolute; top: 50%; transform: translateY(-50%); font-size: 2em; color: var(--color-texto-claro);
+    background: rgba(0,0,0,0.2); width: 30px; height: 40px; line-height: 35px; text-align: center; opacity: 0;
+    transition: opacity 0.4s ease, background 0.3s ease, transform 0.2s ease; user-select: none; z-index: 60;
+    border-radius: 8px; font-weight: bold; display: flex; justify-content: center; align-items: center;
+}
+.carousel-arrow-left { left: 10px; }
+.carousel-arrow-right { right: 10px; }
+.carousel-container:hover .carousel-arrow { opacity: 1; }
+.carousel-arrow:hover { background: rgba(70, 130, 180, 0.7); color: var(--color-texto-claro); transform: translateY(-50%) scale(1.1); }
+.carousel-arrow:active { transform: translateY(-50%) scale(0.95); }
+
+/* --- Door Animation Overlay (9 STATES) --- */
+.door-overlay {
+    position: absolute; top: 50%; left: 50%; width: 115%; height: 115%;
+    transform: translate(-50%, -50%) translate(-1px, -16px); 
+    background-size: 100% 100%; background-repeat: no-repeat; background-position: center;
+    pointer-events: none; z-index: 50; 
+    transition: none;
+}
+
+/* 9-State System Mapping */
+.door-overlay[data-state="1"] { display: block; background-image: url('imagenes/animaciones/puertas/Door_1.png'); }
+.door-overlay[data-state="2"] { display: block; background-image: url('imagenes/animaciones/puertas/Door_2.png'); }
+.door-overlay[data-state="3"] { display: block; background-image: url('imagenes/animaciones/puertas/Door_3.png'); }
+.door-overlay[data-state="4"] { display: block; background-image: url('imagenes/animaciones/puertas/Door_4.png'); }
+.door-overlay[data-state="5"] { display: block; background-image: url('imagenes/animaciones/puertas/Door_5.png'); }
+.door-overlay[data-state="6"] { display: block; background-image: url('imagenes/animaciones/puertas/Door_6.png'); }
+.door-overlay[data-state="7"] { display: block; background-image: url('imagenes/animaciones/puertas/Door_7.png'); }
+.door-overlay[data-state="8"] { display: block; background-image: url('imagenes/animaciones/puertas/Door_8.png'); }
+.door-overlay[data-state="9"] { display: block; background-image: url('imagenes/animaciones/puertas/Door_9.png'); }
+
+.calendar-game-block { display: flex; flex-direction: row; gap: 15px; align-items: center; flex-shrink: 0; }
+#game-icon-image { width: 80px; height: 80px; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.2); transition: transform 0.3s ease; display: block; }
+#game-icon-image img { width: 100%; height: 100%; object-fit: cover; display: block; }
+#game-icon-image:hover { transform: scale(1.1); box-shadow: 0 6px 15px rgba(0,0,0,0.3); }
+
+/* Calendario */
+.extra-box {
+    width: 300px; height: 340px; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px);
+    border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: flex; flex-direction: column;
+    align-items: center; justify-content: flex-start; padding: 10px; text-align: center; color: var(--color-texto-claro);
+    position: relative; overflow: hidden;
+}
+.calendar-bg-layer {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; background-position: center;
+    z-index: 0; opacity: 0; transition: opacity 0.5s ease, filter 0.1s linear; pointer-events: none; filter: opacity(1) blur(0px);
+}
+.calendar-bg-layer.active { opacity: 1; }
+.calendar-header, .calendar-grid { position: relative; z-index: 2; }
+.calendar-header { display: flex; justify-content: space-between; width: 100%; align-items: center; margin-bottom: 10px; font-weight: bold; }
+.calendar-header button { background: none; border: none; color: var(--color-texto-claro); font-size: 1.2em; padding: 5px 8px; border-radius: 6px; font-weight: bold; transition: background 0.2s, color 0.2s; cursor: pointer; }
+.calendar-header button:hover { background: rgba(255, 255, 255, 0.2); color: #fff; }
+.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; width: 100%; font-size: 0.9em; justify-items: center; }
+.calendar-grid div { width: 100%; height: 35px; display: flex; justify-content: center; align-items: center; border-radius: 6px; transition: all 0.3s ease; user-select: none; color: var(--color-texto-claro); padding: 0; }
+.calendar-grid div:nth-child(-n+7) { color: rgba(255, 255, 255, 0.6); font-weight: normal; font-size: 0.85em; cursor: default; height: 25px; }
+.calendar-grid div:not(:nth-child(-n+7)):hover { background: rgba(255, 255, 255, 0.15); transform: scale(1.05); }
+.calendar-grid .today { background: rgba(255, 255, 255, 0.1); color: #fff; font-weight: bold; border: 1px solid rgba(255, 255, 255, 0.6); box-shadow: 0 0 8px rgba(255, 255, 255, 0.2); }
+.calendar-grid .special-day { background: rgba(70, 130, 180, 0.6); color: white; font-weight: bold; border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); transform: scale(1.05); }
+
+.carousel-indicators { display: flex; justify-content: center; gap: 15px; margin: 15px auto 0 auto; width: fit-content; max-width: 100%; position: relative; z-index: 10; padding: 0; }
+.carousel-indicators div { width: 120px; height: 6px; background: rgba(255,255,255,0.4); transition: all 0.3s ease; border-radius: 4px; cursor: pointer; }
+.carousel-indicators div:hover { transform: scaleY(1.2); background: rgba(255,255,255,0.6); }
+.carousel-indicators .active { background: #fff; transform: scaleY(1.2); box-shadow: 0 0 8px rgba(255,255,255,0.5); }
+
+#narrative-intro {
+    max-width: 900px; margin: 40px auto 20px auto; padding: 20px; color: var(--color-texto-claro);
+    background: rgba(0, 0, 0, 0.25); border-radius: 8px; font-size: 1.1em; line-height: 1.6;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.6); backdrop-filter: blur(5px);
+}
+
+.cards-container {
+    display: flex; justify-content: center; align-items: flex-start; gap: 40px; max-width: 1600px; width: 75%;
+    margin-top: 40px; margin-left: auto; margin-right: auto; padding-bottom: 20px; position: relative;
+}
+.timeline-column {
+    flex: 1; display: flex; flex-direction: column; align-items: center; background: rgba(0, 0, 0, 0.25);
+    border-radius: 12px; padding: 30px 20px; backdrop-filter: blur(5px); box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+.column-header { margin-bottom: 25px; color: var(--color-texto-claro); font-size: 1.8em; font-family: 'Georgia', serif; text-shadow: 2px 2px 4px rgba(0,0,0,0.6); position: relative; padding-bottom: 10px; }
+.column-header::after { content: ''; display: block; width: 60px; height: 3px; background: #AED6F1; margin: 10px auto 0; border-radius: 2px; }
+
+.polaroids-wrapper { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; width: 100%; }
+.card {
+    width: 200px; height: 310px; background: var(--color-texto-claro); border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    display: flex; flex-direction: column; overflow: hidden; text-align: center; transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.2s ease;
+    text-decoration: none !important; color: inherit; cursor: url('imagenes/cursores/cinnamoroll_pointer.png'), pointer !important; position: relative; z-index: 10;
+}
+.card:not(.disordered):hover { transform: scale(1.05); z-index: 20; box-shadow: 0 8px 25px rgba(0,0,0,0.3); }
+.card img { width: 100%; height: 240px; object-fit: cover; }
+.card .card-content { padding: 10px 5px; display: flex; flex-direction: column; gap: 0; justify-content: center; flex: 1; }
+.card h2 { margin: 0; font-size: 1em; color: #000; font-weight: 800; text-decoration: none !important; line-height: 1.2; }
+.card .card-subtitle { display: block; font-size: 0.8em; color: #666; font-weight: 400; margin-top: 2px; }
+
+.modal {
+    display: flex; opacity: 0; visibility: hidden; pointer-events: none; position: fixed; top:0; left:0; width:100%; height:100%;
+    background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 2000; transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+.modal.show { opacity: 1; visibility: visible; pointer-events: auto; }
+.modal-content {
+    display: flex; flex-direction: row;
+    width: 1065px; height: 529px; 
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 20px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); position: relative; transform: scale(0.8);
+    opacity: 0; transition: transform 0.3s ease, opacity 0.3s ease;
+    overflow: visible; 
+}
+.modal.show .modal-content { transform: scale(1); opacity: 1; }
+
+.modal-content .song-link-wrapper { width: 40%; height: auto; transition: transform 0.1s ease; border-radius: 8px; overflow: hidden; display: block; position: relative; z-index: 10; }
+.modal-content .song-link-wrapper img { width: 100%; height: 100%; border-radius: 8px; object-fit: cover; display: block; }
+.modal-text { width: 60%; display: flex; flex-direction: column; justify-content: flex-start; gap: 10px; padding-left: 15px; position: relative; z-index: 10; }
+.modal-text h2 { margin: 0; font-size: 1.5em; color: var(--color-principal); }
+.modal-text p { font-size: 1em; color: var(--color-texto-oscuro); }
+.modal-text a { color: var(--color-acento); text-decoration: none; font-weight: bold; }
+
+/* Estilo para los Stickers del Modal */
+.modal-sticker-container {
+    position: absolute; width: 150px; z-index: 5; pointer-events: none; transition: none;
+}
+.modal-sticker-container img { width: 100%; height: auto; display: block; user-select: none; }
+.sticker-handle {
+    position: absolute; top: -5px; left: -5px; width: 20px; height: 20px; 
+    background: #00f2fe; border: 2px solid #fff; border-radius: 50%;
+    cursor: nwse-resize; display: none; z-index: 100; box-shadow: 0 0 5px rgba(0,0,0,0.5);
+}
+
+body.design-mode .modal-sticker-container.editable {
+    pointer-events: auto; outline: 2px dashed rgba(0, 242, 254, 0.5); cursor: move; z-index: 50;
+}
+body.design-mode .modal-sticker-container.editable .sticker-handle { display: block; }
+
+#card-edit-modal input, #card-edit-modal textarea { width: 100%; background: #f0f0f0; border: 1px solid #ccc; padding: 8px; margin-bottom: 10px; border-radius: 4px; color: #333; }
+#card-edit-modal label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; text-align: left; }
+
+#arcade-game-modal .modal-content-game {
+    width: auto; max-width: none; height: auto; background: transparent; box-shadow: none; padding: 0; border: none;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; overflow: hidden;
+    z-index: 10; 
+}
+.cerrar-game { position: absolute; top: -50px; right: 0; color: white; font-size: 40px; cursor: pointer; text-shadow: 0 2px 5px rgba(0,0,0,0.5); z-index: 2030; opacity: 0.8; transition: opacity 0.3s; }
+.cerrar-game:hover { opacity: 1; transform: scale(1.1); }
+
+.game-layout { display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 20px; }
+.game-wrapper {
+    position: relative; width: min(1000px, 85vh, 90vw); aspect-ratio: 1 / 1; display: flex; justify-content: center; align-items: center;
+    filter: drop-shadow(0 10px 30px rgba(0,0,0,0.6)); padding: clamp(40px, 12%, 120px);
+}
+.game-wrapper::after {
+    content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background-image: url('imagenes/marcos/mi_marco.jpg'); background-size: 100% 100%; background-repeat: no-repeat;
+    pointer-events: none; z-index: 10;
+}
+#arcade-game-canvas {
+    border: none; box-shadow: 0 0 0 40px #bdc3c7; background-color: var(--game-bg); width: 100%; height: auto; 
+    aspect-ratio: 1.296; object-fit: contain; position: relative; z-index: 1; top: 20px;
+}
+
+/* OVERLAY VISUAL INDEPENDIENTE (SNAKE) */
+#game-blur-layer {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 0; 
+    backdrop-filter: blur(5px) !important; 
+    background: rgba(0, 0, 0, 0.5) !important;
+    pointer-events: none;
+    transition: backdrop-filter 0.3s ease, background 0.3s ease, opacity 0.3s ease;
+}
+
+/* SELECTOR DIFICULTAD (SOLO ESTRUCTURA - NEUTRALIZADO) */
+.difficulty-selector {
+    padding: 40px 30px; border-radius: 0; 
+    display: flex; flex-direction: column; gap: 15px; margin-bottom: 0; 
+    opacity: 0; 
+    visibility: hidden; 
+    pointer-events: none;
+    background: transparent;
+}
+.difficulty-selector span { color: #00f2fe; font-weight: 800; font-size: 1.3em; display: block; margin-bottom: 15px; border-bottom: 2px solid rgba(255,255,255,0.6); padding-bottom: 8px; width: 100%; text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 0 5px rgba(0, 242, 254, 0.5); }
+.diff-buttons { display: flex; flex-direction: column; gap: 0; width: 100%; }
+.diff-btn {
+    background: transparent; border: none; border-bottom: 1px solid rgba(255, 255, 255, 0.3); 
+    color: #fff; 
+    padding: 20px 15px; 
+    border-radius: 0; cursor: pointer; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); font-size: 1.1em; font-weight: 700; text-align: left; width: 100%;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+.diff-btn:hover { background: rgba(255, 255, 255, 0.1); padding-left: 20px; color: #00f2fe; }
+.diff-btn.active { padding-left: 10px; border-left: none; border-bottom: 3px solid var(--color-principal); color: #00f2fe; }
+.difficulty-selector span { border-bottom: none; border-right: 2px solid rgba(255,255,255,0.6); padding-right: 10px; margin-right: 15px; width: auto; padding-bottom: 0; margin-bottom: 0; }
+
+/* NUEVO: Selector de Dificultad (Widget) */
+#diff-selector-container {
+    position: fixed; top: 78px; right: 248px; width: 348px; height: auto; z-index: 4000; pointer-events: none;
+    display: none; 
+}
+#diff-selector-container.show {
+    display: block;
+}
+body.design-mode #diff-selector-container {
+    display: block;
+    border: 1px dashed #00f2fe; 
+}
+
+#diff-bg-img {
+    width: 100%; height: auto; display: block; pointer-events: none; user-select: none;
+}
+.diff-hitbox {
+    position: absolute; cursor: pointer; background: transparent; pointer-events: auto; transition: background 0.2s;
+}
+#diff-btn-normal { top: 26%; left: 15%; width: 64%; height: 20%; }
+#diff-btn-hard { top: 48%; left: 15%; width: 65%; height: 16%; }
+#diff-btn-expert { top: 65%; left: 14%; width: 66%; height: 17%; }
+
+body.design-mode .diff-hitbox {
+    border: 1px dashed red; background: rgba(255, 0, 0, 0.2);
+}
+
+@media (max-width: 1200px) {
+    .carousel-wrapper-flex { display: flex; flex-direction: column; align-items: center; }
+    #open-letter-btn { margin-bottom: 20px; }
+    .carousel-container { min-width: 90%; max-width: 90%; height: 300px; }
+    .calendar-game-block { margin-top: 20px; }
+    .rectangulo-izquierdo > div { flex-direction: column; align-items: center; gap: 15px; }
+    .time-counter-box { width: 80% !important; max-width: 400px; }
+    .cards-container { gap: 30px; width: 90%; }
+}
+@media (max-width: 768px) {
+    .carousel-container { min-width: 95%; height: 200px; }
+    .slide-group img { width: 48%; }
+    .carousel-indicators div { width: 30px; height: 5px; }
+    .calendar-game-block { flex-direction: column; gap: 10px; }
+    .extra-box { width: 95vw; max-width: 300px; height: auto; }
+    .cards-container { flex-direction: column; gap: 30px; align-items: center; width: 95%; }
+    .cards-container::after { display: none; }
+    .timeline-column { width: 100%; padding: 0 10px; }
+    .polaroids-wrapper { justify-content: center; }
+    .card { width: 150px; height: 250px; }
+    .card img { height: 190px; }
+    .modal-content { flex-direction: column; height: auto; max-width: 95%; padding: 15px; }
+    .modal-content .song-link-wrapper, .modal-text { width: 100%; padding: 0; margin-top: 15px; }
+    #arcade-game-modal .modal-content-game { width: 95vw; height: auto; }
+    .time-counter-box { width: 95% !important; }
+    .letter-container { padding: 20px; width: 95%; }
+    .letter-content { font-size: 1em; line-height: 24px; }
+}
+
+#design-tool-btn {
+    position: fixed; top: 20px; left: 20px; background: #333; color: #fff; padding: 10px 15px;
+    border-radius: 8px; cursor: pointer; z-index: 2147483647 !important; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: transform 0.2s;
+}
+#design-tool-btn:hover { transform: scale(1.05); }
+#design-tool-panel {
+    position: fixed; top: 70px; left: 20px; width: 320px; max-height: 80vh; overflow-y: auto; background: rgba(0,0,0,0.95);
+    color: white; padding: 15px; border-radius: 8px; z-index: 2147483647 !important; font-size: 12px; display: flex; flex-direction: column;
+    gap: 10px; backdrop-filter: blur(5px); box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+#design-tool-panel.hidden { display: none; }
+.tool-group { display: flex; flex-direction: column; gap: 5px; border-bottom: 1px solid #555; padding-bottom: 10px; }
+.tool-group h4 { color: #00f2fe; margin: 0; font-weight: bold; font-size: 13px; display:flex; justify-content: space-between; }
+.tool-row { display: flex; justify-content: space-between; align-items: center; gap: 5px; }
+.tool-row label { width: 50px; color: #aaa; }
+.tool-row input[type="range"] { flex: 1; accent-color: #00f2fe; }
+.tool-row input[type="number"] { width: 50px; background: #222; border: 1px solid #444; color: #0f0; text-align: right; padding: 2px; border-radius: 4px; }
+.tool-row input[type="text"] { flex: 1; background: #222; border: 1px solid #444; color: #fff; padding: 2px 5px; border-radius: 4px; width: 100%; }
+.tool-row select { flex: 1; background: #222; border: 1px solid #444; color: #fff; padding: 2px; border-radius: 4px; }
+#css-output { width: 100%; height: 120px; background: #111; color: #0f0; font-family: monospace; border: 1px solid #333; padding: 5px; margin-top: 10px; resize: vertical; }
+
+#movable-sticker { position: fixed; top: 50px; left: 50px; width: 150px; height: 150px; z-index: 4000; pointer-events: none; transition: all 0.1s linear; }
+#movable-sticker img { width: 100%; height: auto; display: block; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2)); }
+.calibration-mode #movable-sticker { border: 2px dashed #ff00ff; background: rgba(255, 0, 255, 0.1); pointer-events: auto; }
+
+/* Estilos para el modo debug de playlist */
+body.playlist-debug-mode #player-wrapper {
+    top: 10% !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: translateX(-50%) !important;
+    --scale: 1 !important; /* Reset scale for easier editing */
+    transition: none !important; /* Disable transitions for instant snap */
+    z-index: 2147483640 !important;
+}
+body.playlist-debug-mode #playlist-container {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+</style>
+</head>
+<body>
+   <div id="page-background"></div>
+
+   <div id="diff-selector-container">
+       <img src="imagenes/ui/difficulty_selector.png" onerror="this.src='https://via.placeholder.com/300x100?text=Selector+Dificultad'" id="diff-bg-img">
+       <div class="diff-hitbox" id="diff-btn-normal" data-difficulty="normal" title="Normal"></div>
+       <div class="diff-hitbox" id="diff-btn-hard" data-difficulty="hard" title="Difícil"></div>
+       <div class="diff-hitbox" id="diff-btn-expert" data-difficulty="expert" title="Experto"></div>
+   </div>
+
+   <div id="player-wrapper">
+        <div class="expand-trigger"><i data-lucide="chevron-left" class="w-6 h-6"></i></div>
+        <div id="player" class="mode-bubble">
+            <div class="player-expanded-bg"></div>
+            <div class="album-container">
+                <img id="marco-img" src="imagenes/marcos/marco.png" onerror="this.style.opacity='0'" class="marco">
+                <img id="m-e1" src="imagenes/marcos/Marco2.jpg" onerror="this.style.opacity='0'" class="marco">
+                <img id="m-e2" src="imagenes/marcos/Marco3.jpg" onerror="this.style.opacity='0'" class="marco">
+                <div class="album-inner"><img id="album-img" src="imagenes/albumes/cancion1.jpg" onerror="this.src='https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=400'" class="w-full h-full object-cover"></div>
+                <div class="b-play"><i data-lucide="play" id="b-i" size="54" fill="currentColor"></i></div>
+            </div>
+            <div class="expanded-content-wrapper">
+                <img id="bar-album-img" class="frame-album-art" src="imagenes/albumes/cancion1.jpg" onerror="this.src='https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=400'">
+                <div class="frame-controls-area">
+                    <div class="bar-title" id="track-title">
+                        <div id="song-name">Canción 1</div>
+                        <div id="artist-name">Artista</div>
+                    </div>
+                    <div class="bar-progress-wrapper">
+                         <div id="p-c" class="bar-progress-track"><div id="p-f" class="bar-progress-fill"></div></div>
+                         <div class="bar-time"><span id="cur">0:00</span><span id="dur">0:00</span></div>
+                    </div>
+                    <div class="bar-buttons">
+                         <div class="bar-btn-mini" id="prev-btn"><i data-lucide="skip-back" size="24" fill="currentColor"></i></div>
+                         <div class="bar-play-circle" id="p-main"><i data-lucide="play" id="p-i" size="24" fill="currentColor"></i></div>
+                         <div class="bar-btn-mini" id="next-btn"><i data-lucide="skip-forward" size="24" fill="currentColor"></i></div>
+                         <div class="bar-btn-mini" id="dir-btn"><i data-lucide="folder-open" size="20" fill="currentColor"></i></div>
+                         <div class="bar-btn-mini" id="toggle-list-btn"><i data-lucide="list" size="20" fill="currentColor"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="playlist-container">
+            <div id="playlist-manual-wrapper">
+                <div id="playlist-background"></div>
+                <div id="playlist-content-overlay">
+                    <!-- Se llena dinámicamente -->
+                </div>
+            </div>
+        </div>
+    </div>
+    <audio id="main-audio"></audio>
+    <input type="file" id="dir-input" webkitdirectory directory multiple style="display:none;">
+    <input type="file" id="sticker-input" accept="image/*" style="display:none;">
+
+    <div id="movable-sticker">
+        <img src="imagenes/stickers/cinnamoroll_sticker.png" onerror="this.src='https://media.tenor.com/a6a66d6d0a0a0a0a/cinnamoroll.gif'" alt="Sticker Decorativo">
+    </div>
+
+<div id="intro-overlay" class="hidden">
+    <div id="envelope-stage" class="interactable">
+        <img id="envelope-img" src="imagenes/animaciones/sobre/sobre_cerrado.png" onerror="this.src='https://images.unsplash.com/photo-1555447405-058428d1deef?q=80&w=300'" alt="Sobre">
+    </div>
+    <div id="letter-stage" class="letter-container interactable hidden-stage">
+        <img id="letter-frame" src="imagenes/marcos/marco_carta.png" onerror="this.src='https://www.freeiconspng.com/thumbs/border-png/gold-border-png-2.png'" alt="Marco Carta">
+        <div class="letter-scroll-wrapper">
+            <div class="letter-content">
+                <p>Pensé y pensé, cada día más decepcionado por mi falta de creatividad, por la imposibilidad de representar aquello que siento, queriendo demostrar lo que llevo en el corazon (una metáfora bonita, aunque quizás algo tonta, el cerebro se encarga de eso no?). Tal vez es absurdo, no porque mi amor lo sea, sino porque resulta realmente complejo demostrar algo que ni yo mismo entiendo... algo que aun no tiene un final, ni una definición clara.</p>
+                <p>No comprendo del todo lo que significa amar, tal vez soy demasiado ingenuo como para decir que amo algo, pero si comprendo las sensaciones, se que esta manera de sobre pensar las cosas, de querer mejorar, de intentar enseñarte lo mucho que te quiero y lo que valgo, no puede ser malo. Aun asi, no entiendo lo que ocurre, no entiendo como se genera el cariño, ni por que me resulta tan difícil soltarte o intentar olvidarte...</p>
+                <p>Supongo que ahora formas parte de mi, de cada situación, de cada momento, de cada mínima accion o decisión... todo, de alguna manera, me lleva a ti, supongo que eso es lo que entiendo del "amor".</p>
+                <p>No quiero tener miedo de amar, no quiero callar lo que siento cuando lo siento, quiero dar todo de mi, mi confusion, mi seguridad, mi alegria, mi tristeza y también mi enojo. No para influir en ti, sino para demostrarme a mí que, aun mostrándome vulnerable, esto tiene sentido.</p>
+                <p style="text-align: right; font-weight: bold; margin-top: 20px;">Te amo, Keyla.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="particles-container"></div> 
+
+<div class="main-content-wrapper">
+    <div class="bloque-superior">
+        <div class="rectangulo-izquierdo">
+            <div style="display: flex; justify-content: center; align-items: flex-start; width: 100%; gap: 15px;">
+                <div id="time-since-met" class="time-counter-box" data-label="Nos conocimos hace:" style="text-align: center;"><p style="color: #ccc;">Calculando...</p></div>
+                <div id="time-we-met-irl" class="time-counter-box" data-label="Nos vimos hace:" style="text-align: center;"><p style="color: #ccc;">Calculando...</p></div>
+                <div id="time-together" class="time-counter-box" data-label="Estamos juntos desde:" style="text-align: center;"><p style="color: #ccc;">Calculando...</p></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <div class="carousel-wrapper-flex">
+        <button id="open-letter-btn" class="interactable"><img src="imagenes/iconos/icono_carta.png" alt="Abrir carta"></button>
+        <div class="carousel-center-block">
+            <div class="carousel-container draggable" id="carousel-main-box">
+                <!-- AQUÍ ES DONDE SE CARGA LA IMAGEN -->
+                <div id="carousel-bg-layer" class="carousel-bg-layer active"></div>
+                
+                <!-- Slide Group 1 -->
+                <div class="slide-group active">
+                    <img src="imagenes/fotos/carrusel/foto1.jpg" alt="Foto 1" loading="lazy" class="slide-photo">
+                    <img src="imagenes/fotos/carrusel/foto2.jpg" alt="Foto 2" loading="lazy" class="slide-photo">
+                </div>
+                
+                <!-- Slide Group 2 -->
+                <div class="slide-group">
+                    <img src="imagenes/fotos/carrusel/foto3.jpg" alt="Foto 3" loading="lazy" class="slide-photo">
+                    <img src="imagenes/fotos/carrusel/foto4.jpg" alt="Foto 4" loading="lazy" class="slide-photo">
+                </div>
+                
+                <!-- Slide Group 3 -->
+                <div class="slide-group">
+                    <img src="imagenes/fotos/carrusel/foto5.jpg" alt="Foto 5" loading="lazy" class="slide-photo">
+                    <img src="imagenes/fotos/carrusel/foto6.jpg" alt="Foto 6" loading="lazy" class="slide-photo">
+                </div>
+                
+                <div class="carousel-arrow carousel-arrow-left interactable"><i data-lucide="chevron-left"></i></div>
+                <div class="carousel-arrow carousel-arrow-right interactable"><i data-lucide="chevron-right"></i></div>
+            </div>
+            <div class="carousel-indicators"></div>
+        </div>
+
+        <div class="calendar-game-block">
+            <div class="extra-box" id="calendar-box">
+                <div id="calendar-bg-layer" class="calendar-bg-layer"></div>
+                <div class="calendar-header">
+                    <button id="prev-month" class="interactable"><</button><span id="month-year"></span><button id="next-month" class="interactable">></button>
+                </div>
+                <div class="calendar-grid" id="calendar-grid"></div>
+            </div>
+            <a id="game-icon-image" href="#" class="open-game-modal-btn interactable"><img src="imagenes/iconos/icono_juego.png" alt="Icono de Juego"></a>
+        </div>
+    </div>
+
+    <div id="narrative-intro">
+        Escuché que el ser humano puede "atesorar" momentos o revivirlos a través de olores y sonidos, gracias a una conexión con nuestro sistema límbico, creando un "viaje" sensorial vivido. Contigo me ocurre de ambas formas, pero no puedo "guardar" un olor... lastimosamente, pero sí puedo explicarte aquello que me hace sentir o recordar estas canciones.
+    </div>
+
+    <div class="cards-container">
+        <div class="timeline-column left">
+            <h3 class="column-header">Pasado Pisado</h3>
+            <div class="polaroids-wrapper">
+                <div class="card interactable" data-title="Arruinarlo Todo" data-subtitle="Molinette Cinema" data-desc="" data-link="https://open.spotify.com/intl-es/track/76ej7aOQU1tfdzkE3xQ6HS?si=bb9afe9ea9d04066">
+                  <img src="imagenes/albumes/ArruinarloTodo.jpg" alt="Verte Así" loading="lazy">
+                  <div class="card-content"><h2>Arruinarlo Todo</h2><span class="card-subtitle">Molinette Cinema</span></div>
+                </div>
+                <div class="card interactable" data-title="Chica Acuario" data-subtitle="Axel Fiks" data-desc="" data-link="https://open.spotify.com/intl-es/track/5c9B03lTeTYbOVgtPS6Tj2?si=21d598990bbd43d5">
+                  <img src="imagenes/albumes/ChicaAcuario.jpg" alt="Chica Acuario" loading="lazy">
+                  <div class="card-content"><h2>Chica Acuario</h2><span class="card-subtitle">Axel Fiks</span></div>
+                </div>
+                <div class="card interactable" data-title="Ojitos de Md" data-subtitle="Axel Fiks" data-desc="" data-link="https://open.spotify.com/intl-es/track/0Pkc9prDMNlz3WhP9MkwMx?si=810920801f664964">
+                  <img src="imagenes/albumes/OjitosdeMd.jpg" alt="Ojitos de Md" loading="lazy">
+                  <div class="card-content"><h2>Ojitos de Md</h2><span class="card-subtitle">Axel Fiks</span></div>
+                </div>
+                <div class="card interactable" data-title="Compañera" data-subtitle="Axel Fiks" data-desc="" data-link="https://open.spotify.com/intl-es/track/3bkpWGpt6Ck6cd7SRFK4bj?si=48cb9a12c23748b8">
+                  <img src="imagenes/albumes/Compañera.jpg" alt="Compañera" loading="lazy">
+                  <div class="card-content"><h2>Compañera</h2><span class="card-subtitle">Axel Fiks</span></div>
+                </div>
+                <div class="card interactable" data-title="Niño Amor" data-subtitle="Axel Fiks" data-desc="" data-link="https://open.spotify.com/intl-es/track/1AXD4Qm1FDkXpqGRQzo9Oa?si=698f4bb06b324639">
+                  <img src="imagenes/albumes/NiñoAmor.jpg" alt="Niño Amor" loading="lazy">
+                  <div class="card-content"><h2>Niño Amor</h2><span class="card-subtitle">Axel Fiks</span></div>
+                </div>
+                <div class="card interactable" data-title="O Pato" data-subtitle="Ebony Loren" data-desc="" data-link="https://open.spotify.com/intl-es/track/2FF003rfmlKnWH7nBbJimw?si=c68cc602850b4a1e">
+                  <img src="imagenes/albumes/OPato.jpg" alt="O Pato" loading="lazy">
+                  <div class="card-content"><h2>O Pato</h2><span class="card-subtitle">Ebony Loren</span></div>
+                </div>
+                <div class="card interactable" data-title="Hard to Say Goodbye" data-subtitle="Johnny Stimson" data-desc="" data-link="https://open.spotify.com/intl-es/track/4NasktR5Hj5df1iJC6ioJt?si=5cf72a63e2404b09">
+                  <img src="imagenes/albumes/HardtoSayGoodbye.jpg" alt="Pasado 7" loading="lazy">
+                  <div class="card-content"><h2>Hard to Say Goodbye</h2><span class="card-subtitle">Johnny Stimson</span></div>
+                </div>
+                <div class="card interactable" data-title="PONPONPON" data-subtitle="Kyary Pamyu Pamyu" data-desc="" data-link="https://open.spotify.com/intl-es/track/1c6C2wg7PRbPBRRUaEvheC?si=e6f5c0a28e924472">
+                  <img src="imagenes/albumes/PONPONPON.jpg" alt="Pasado 8" loading="lazy">
+                  <div class="card-content"><h2>PONPONPON</h2><span class="card-subtitle">Kyary Pamyu Pamyu</span></div>
+                </div>
+                <div class="card interactable" data-title="Bolerito Sad" data-subtitle="Simon Grossman" data-desc="" data-link="https://open.spotify.com/intl-es/track/6zTOZgquu79UQLGtoyKf0Z?si=cd86c38e836a42a3">
+                  <img src="imagenes/albumes/BoleritoSad.jpg" onerror="this.src='https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&w=400'" alt="Extra 1" loading="lazy">
+                  <div class="card-content"><h2>Bolerito Sad</h2><span class="card-subtitle">Simon Grossman</span></div>
+                </div>
+                <div class="card interactable" data-title="Parte de Mi" data-subtitle="Simon Grossmann" data-desc="" data-link="https://open.spotify.com/intl-es/track/0AeBhP1WlBMQSJfyYB4ueA?si=d813a6d305e7446d">
+                  <img src="imagenes/albumes/PartedeMi.jpg" onerror="this.src='https://images.unsplash.com/photo-1470240731273-7821a6eeb6bd?q=80&w=400'" alt="Extra 2" loading="lazy">
+                  <div class="card-content"><h2>Parte de Mi</h2><span class="card-subtitle">Simon Grossmann</span></div>
+                </div>
+                <div class="card interactable" data-title="Cancion de Amor" data-subtitle="Viniloversus, Simon Grossman" data-desc="" data-link="https://open.spotify.com/intl-es/track/08cKYcUskKnbKC6nwJXNaW?si=8b1a2f9b79c4495c">
+                  <img src="imagenes/albumes/CanciondeAmor.jpg" onerror="this.src='https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=400'" alt="Extra 3" loading="lazy">
+                  <div class="card-content"><h2>Cancion de Amor</h2><span class="card-subtitle">Viniloversus, Simon Grossman</span></div>
+                </div>
+            <div class="card interactable" data-title="Formula" data-subtitle="Labrinth" data-desc="" data-link="https://open.spotify.com/intl-es/track/6EtKlIQmGPB9SX8UjDJG5s?si=41f6957ea72b4874">
+                    <img src="imagenes/albumes/Formula.jpg" onerror="this.src='https://via.placeholder.com/200x240?text=Nueva+Imagen'" alt="Nueva Carta" loading="lazy">
+                    <div class="card-content">
+                        <h2>Formula</h2>
+                        <span class="card-subtitle">Labrinth</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="timeline-column right">
+            <h3 class="column-header">Ahoritita Mismo</h3>
+            <div class="polaroids-wrapper">
+                <div class="card interactable" data-title="Algo Que Decirte" data-subtitle="AppleCats" data-desc="" data-link="https://open.spotify.com/intl-es/track/1cUrqY5xCAG0OuPDBoKnKY?si=508533ca8428490d">
+                  <img src="imagenes/albumes/AlgoQueDecirte.jpg" alt="Canción 7" loading="lazy">
+                  <div class="card-content"><h2>Algo Que Decirte</h2><span class="card-subtitle">AppleCats</span></div>
+                </div>
+                <div class="card interactable" data-title="Love Me Not" data-subtitle="Ravyn Lenae" data-desc="" data-link="#">
+                  <img src="imagenes/albumes/LoveMeNot.jpg" alt="Canción 8" loading="lazy">
+                  <div class="card-content"><h2>Love Me Not</h2><span class="card-subtitle">Ravyn Lenae</span></div>
+                </div>
+                <div class="card interactable" data-title="Always Forever" data-subtitle="Cults" data-desc="" data-link="https://open.spotify.com/intl-es/track/2enPRFda84VE2wtI8c86Uf?si=0785fc7419ac4073">
+                  <img src="imagenes/albumes/AlwaysForever.jpg" alt="Canción 9" loading="lazy">
+                  <div class="card-content"><h2>Always Forever</h2><span class="card-subtitle">Cults</span></div>
+                </div>
+                <div class="card interactable" data-title="Aparato" data-subtitle="Alejandra y Maria Luna" data-desc="" data-link="https://open.spotify.com/intl-es/track/1RTn9YKzFDR6LsuLq2Ia7R?si=c068856d95394cc9">
+                  <img src="imagenes/albumes/Aparato.jpg" alt="Canción 10" loading="lazy">
+                  <div class="card-content"><h2>Aparato</h2><span class="card-subtitle">Alejandra y Maria Luna</span></div>
+                </div>
+                <div class="card interactable" data-title="Salto" data-subtitle="El Joven Paiva" data-desc="" data-link="https://open.spotify.com/intl-es/track/24ihFGZFQ3S1ONWMKaVbTF?si=33b6025af31246f9">
+                  <img src="imagenes/albumes/Salto.jpg" alt="Canción 11" loading="lazy">
+                  <div class="card-content"><h2>Salto</h2><span class="card-subtitle">El Joven Paiva</span></div>
+                </div>
+                <div class="card interactable" data-title="Si Tú Me Quisieras" data-subtitle="Adrián Bello" data-desc="" data-link="https://open.spotify.com/intl-es/track/6IDYKjOBK8zMyMqv2NQ9VL?si=fa0d5a9b2fa244c8">
+                  <img src="imagenes/albumes/SiTúMeQuisieras.jpg" alt="Foto Recuerdo 1" loading="lazy">
+                  <div class="card-content"><h2>Si Tú Me Quisieras</h2><span class="card-subtitle">Adrián Bello</span></div>
+                </div>
+                <div class="card interactable" data-title="Me Voy A Valparaíso" data-subtitle="Diego Lorenzini" data-desc="" data-link="https://open.spotify.com/intl-es/track/6IDYKjOBK8zMyMqv2NQ9VL?si=b6f94d71cbaa4eca">
+                  <img src="imagenes/albumes/MeVoyAValparaíso.jpg" alt="Foto Recuerdo 2" loading="lazy">
+                  <div class="card-content"><h2>Me Voy A Valparaíso</h2><span class="card-subtitle">Diego Lorenzini</span></div>
+                </div>
+                <div class="card interactable" data-title="Dulcito e Coco" data-subtitle="Vicente Garcia" data-desc="" data-link="https://open.spotify.com/intl-es/track/3hQR682FLOBZg22eYjPA6L?si=865b6166a3204cee">
+                  <img src="imagenes/albumes/DulcitoeCoco.jpg" alt="Foto Recuerdo 3" loading="lazy">
+                  <div class="card-content"><h2>Dulcito e Coco</h2><span class="card-subtitle">Vicente Garcia</span></div>
+                </div>
+                <div class="card interactable" data-title="Movimiento Astral" data-subtitle="Gauchito Club" data-desc="" data-link="https://open.spotify.com/intl-es/track/3TthnEq8J6TKefgkakYt9v?si=1c5d5021bb7c4488">
+                  <img src="imagenes/albumes/MovimientoAstral.jpg" onerror="this.src='https://images.unsplash.com/photo-1559339352-11d035aa65de?q=80&w=400'" alt="Extra 4" loading="lazy">
+                  <div class="card-content"><h2>Movimiento Astral</h2><span class="card-subtitle">Gauchito Club</span></div>
+                </div>
+                <div class="card interactable" data-title="Cuando Regreses a Mi" data-subtitle="Molinette Cinema" data-desc="" data-link="https://open.spotify.com/intl-es/track/6s7vWQ07LAoEi2uNw4WlMB?si=5feb2d76dd5c49d3">
+                  <img src="imagenes/albumes/CuandoRegresesaMi.jpg" onerror="this.src='https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=400'" alt="Extra 5" loading="lazy">
+                  <div class="card-content"><h2>Cuando Regreses a Mi</h2><span class="card-subtitle">Molinette Cinema</span></div>
+                </div>
+                <div class="card interactable" data-title="Beautiful Boy" data-subtitle="Jhon Lennon" data-desc="" data-link="https://open.spotify.com/intl-es/track/5GMQdzgtI7vtpmtps2YiYx?si=9ce574cab8904620">
+                  <img src="imagenes/albumes/BeautifulBoy.jpg" onerror="this.src='https://images.unsplash.com/photo-1621252179027-94459d27d3ee?q=80&w=400'" alt="Extra 6" loading="lazy">
+                  <div class="card-content"><h2>Beautiful Boy</h2><span class="card-subtitle">Jhon Lennon</span></div>
+                </div>
+                <div class="card interactable" data-title="Imagine" data-subtitle="Jhon Lennon" data-desc="" data-link="https://open.spotify.com/intl-es/track/7pKfPomDEeI4TPT6EOYjn9?si=d0b29074338b4285">
+                    <img src="imagenes/albumes/Imagine.jpg" onerror="this.src='https://via.placeholder.com/200x240?text=Nueva+Imagen'" alt="Nueva Carta" loading="lazy">
+                    <div class="card-content">
+                        <h2>Imagine</h2>
+                        <span class="card-subtitle">Jhon Lennon</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<div id="final-message-container">
+    <div id="final-message">
+        <p>Pensaba darte esto hace muchísimo tiempo, y realmente agradezco mucho que no pasó, ya que no hubiera tenido la oportunidad de incluir imágenes juntos. No obstante, antes de "conocernos", para mí esto ya era muy real: tú me tenías cautivado. Con un simple mensaje en el cual demostraras tu esencia, yo estaba enamorado. Pero tenerte a mi lado es como un sueño, tú eres increíble y quiero estar a tu lado toda mi vida para yo también ser increíble. Te admiro muchísimo y me encanta la persona que eres, y la inteligencia enorme que posees. Quizás soy "sapiofilico", me gusta cachar sapos, jaja. Te amo demasiado Keyla.</p>
+    </div>
+</div>
+
+<div class="modal" id="modal">
+    <div class="modal-content" id="main-modal-content">
+        
+        <!-- Stickers AGREGADOS: 4 Stickers Independientes ACTUALIZADOS -->
+        <div id="modal-sticker-1" class="modal-sticker-container" style="bottom: -118px; right: -157px; width: 406px; height: 309px;">
+            <img class="sticker-img" src="imagenes/stickers/sticker_1.png" onerror="this.src='https://media.tenor.com/a6a66d6d0a0a0a0a/cinnamoroll.gif'">
+            <div class="sticker-handle interactable"></div>
+        </div>
+        <div id="modal-sticker-2" class="modal-sticker-container" style="top: -196px; left: -196px; width: 347px; height: auto; display: block;">
+            <img class="sticker-img" src="imagenes/stickers/sticker_2.png" onerror="this.src='https://media.tenor.com/a6a66d6d0a0a0a0a/cinnamoroll.gif'">
+            <div class="sticker-handle interactable"></div>
+        </div>
+        <div id="modal-sticker-3" class="modal-sticker-container" style="bottom: -196px; left: -196px; width: 347px; height: auto; display: block;">
+            <img class="sticker-img" src="imagenes/stickers/sticker_3.png" onerror="this.src='https://media.tenor.com/a6a66d6d0a0a0a0a/cinnamoroll.gif'">
+            <div class="sticker-handle interactable"></div>
+        </div>
+        <div id="modal-sticker-4" class="modal-sticker-container" style="top: -235px; right: -392px; width: 640px; height: auto; display: block;">
+            <img class="sticker-img" src="imagenes/stickers/sticker_4.png" onerror="this.src='https://media.tenor.com/a6a66d6d0a0a0a0a/cinnamoroll.gif'">
+            <div class="sticker-handle interactable"></div>
+        </div>
+        
+        <a id="modal-image-link" class="song-link-wrapper interactable" href="#" target="_blank"><img id="modal-img" src="" alt="Imagen de la canción"></a>
+        <div class="modal-text"><h2 id="modal-title"></h2><p id="modal-desc"></p></div>
+    </div>
+</div>
+
+<div id="card-edit-modal" class="modal">
+    <div class="modal-content" style="flex-direction: column; height: auto; max-height: 90vh; overflow-y: auto;">
+        <span class="cerrar interactable" id="close-edit-card">×</span>
+        <h3 style="color: var(--color-principal); margin-bottom: 20px;">Editar Carta</h3>
+        <label>Título (Nombre visible):<input type="text" id="edit-card-title"></label>
+        <label>Subtítulo (Artista/Fecha):<input type="text" id="edit-card-subtitle"></label>
+        <label>Enlace (URL Spotify/Youtube):<input type="text" id="edit-card-link"></label>
+        <label>Imagen (URL):<input type="text" id="edit-card-img"></label>
+        <label>Descripción:<textarea id="edit-card-desc" rows="3"></textarea></label>
+        <button id="save-card-btn" class="interactable" style="background: var(--color-principal); color: white; padding: 10px; border-radius: 6px; border: none; margin-top: 10px; font-weight: bold;">Guardar Cambios</button>
+    </div>
+</div>
+
+<div class="modal" id="arcade-game-modal">
+    <div id="game-blur-layer"></div>
+    <div class="modal-content modal-content-game">
+        <span class="cerrar interactable cerrar-game" id="cerrar-game-modal">×</span>
+        <div class="game-layout">
+            <div class="game-wrapper" id="game-wrapper"><canvas id="arcade-game-canvas" width="700" height="540"></canvas></div>
+            <div class="difficulty-selector">
+                <span style="color: var(--color-principal); font-weight: 800; margin-bottom: 10px;">Dificultad</span>
+                <div class="diff-buttons">
+                    <button class="diff-btn active interactable" data-speed="130">Normal</button>
+                    <button class="diff-btn interactable" data-speed="80">Difícil</button>
+                    <button class="diff-btn interactable" data-speed="50">Experto</button>
+                </div>
+            </div>
+        </div>
+        <div class="game-controls"><span id="score-display" style="color: var(--game-text); font-weight: bold; font-size: 1.2em;">Puntos: 0</span></div>
+    </div>
+</div>
+
+   <!-- HERRAMIENTA DE DISEÑO (DEV MODE) -->
+   <div id="design-tool-btn">🛠️ Ajustar Diseño</div>
+   <div id="design-tool-panel" class="hidden">
+       <p style="color: yellow; margin: 0 0 10px 0; font-size: 11px;">⚠️ Modo Diseño: Haz clic en las cartas para editar.</p>
+       
+       <div class="tool-group">
+            <h4>Contenido (Cartas)</h4>
+            <div class="tool-row" style="margin-bottom: 5px;">
+                <label style="width: auto;">Destino:</label>
+                <select id="card-target-select" style="flex: 1;">
+                    <option value="left">Pasado Pisado (Izq)</option>
+                    <option value="right">Ahoritita Mismo (Der)</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 5px;">
+                <button id="add-card-btn" style="background: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; flex: 1; font-size:11px;">+ Nueva Carta</button>
+                <button id="export-html-btn" style="background: #27ae60; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; flex: 1; font-size:11px;">Exportar HTML</button>
+            </div>
+       </div>
+       <div class="tool-group">
+            <h4>Generador Playlist JSON</h4>
+            <div class="tool-row"><label style="width: 30px;">Ruta</label><input type="text" id="json-base-path" value="musica/" placeholder="musica/"></div>
+            <div class="tool-row"><label style="width: 30px;">Dir.</label><input type="file" id="json-dir-input" webkitdirectory directory multiple style="width: 100%; font-size: 10px; color: #ccc;"></div>
+       </div>
+       <div class="tool-group">
+            <h4>Fondo de Página</h4>
+            <div class="tool-row"><label>Opac.</label><input type="range" id="bg-opacity" min="0" max="1" step="0.05" value="1"></div>
+            <div class="tool-row"><label>Satur.</label><input type="range" id="bg-saturate" min="0" max="3" step="0.1" value="1"></div>
+            <div class="tool-row"><label>Blur</label><input type="range" id="bg-blur" min="0" max="20" step="1" value="0"></div>
+       </div>
+       
+       <div class="tool-group">
+            <h4>Ajustes Calendario</h4>
+            <div class="tool-row"><label>Fondo</label><input type="text" id="calendar-bg-url" placeholder="URL Imagen Fondo"></div>
+            <div class="tool-row"><label>Subir</label><input type="file" id="calendar-bg-file" accept="image/*" style="width: 100%; font-size: 10px; color: #ccc;"></div>
+            <div class="tool-row"><label>Opac.</label><input type="range" id="calendar-bg-opacity" min="0" max="1" step="0.05" value="1"></div>
+            <div class="tool-row"><label>Blur</label><input type="range" id="calendar-bg-blur" min="0" max="20" step="1" value="0"></div>
+            <div class="tool-row"><label>Ancho</label><input type="number" id="calendar-width" value="300" step="10"></div>
+            <div class="tool-row"><label>Alto</label><input type="number" id="calendar-height" value="340" step="10"></div>
+       </div>
+       <div class="tool-group">
+            <h4 style="margin-bottom:5px;">Reproductor (Burbuja)</h4>
+            <div class="tool-row"><label>Derecha</label><input type="range" id="player-pos-x" min="-50" max="500" value="44"></div>
+            <div class="tool-row"><label>Abajo</label><input type="range" id="player-pos-y" min="-50" max="500" value="44"></div>
+            <div class="tool-row"><label>Escala</label><input type="range" id="player-scale" min="0.2" max="1.5" step="0.05" value="0.65"></div>
+            <h4 style="margin-top:10px; margin-bottom:5px;">Reproductor (Expandido)</h4>
+            <div class="tool-row"><label>Derecha</label><input type="range" id="player-exp-x" min="-50" max="500" value="0"></div>
+            <div class="tool-row"><label>Abajo</label><input type="range" id="player-exp-y" min="-50" max="500" value="30"></div>
+       </div>
+       
+       <!-- NUEVOS CONTROLES STICKER MODAL Y ESTILO MODAL -->
+       <div class="tool-group">
+            <h4>Modal (Estilo Glass) <button id="export-modal-style-btn" style="background: #8e44ad; border:none; border-radius:3px; color:white; cursor:pointer; font-size:10px; padding:2px 5px;">Exportar CSS</button></h4>
+            <div class="tool-row"><label>Opac.</label><input type="range" id="modal-glass-opacity" min="0" max="1" step="0.05" value="0.7"></div>
+            <div class="tool-row"><label>Blur</label><input type="range" id="modal-glass-blur" min="0" max="20" step="1" value="9"></div>
+            <div class="tool-row"><label>Ancho</label><input type="range" id="modal-width" min="300" max="1500" value="1065"></div>
+            <div class="tool-row"><label>Alto</label><input type="range" id="modal-height" min="200" max="1000" value="529"></div>
+
+            <h4 style="margin-top:15px;">Stickers Modal <button id="export-sticker-btn" style="background: #e67e22; border:none; border-radius:3px; color:white; cursor:pointer; font-size:10px; padding:2px 5px;">Exportar HTML</button></h4>
+            <div class="tool-row">
+                <label>Sel.</label>
+                <select id="sticker-selector">
+                    <option value="1">Sticker 1</option>
+                    <option value="2">Sticker 2</option>
+                    <option value="3">Sticker 3</option>
+                    <option value="4">Sticker 4</option>
+                </select>
+            </div>
+            <div class="tool-row" style="justify-content: flex-start; gap: 10px;">
+                <label>Visible</label>
+                <input type="checkbox" id="sticker-visible" checked style="width: auto; flex: 0;">
+            </div>
+            <div class="tool-row"><label>URL</label><input type="text" id="modal-sticker-url" placeholder="URL Sticker"></div>
+            <div class="tool-row"><label>Subir</label><input type="file" id="modal-sticker-file" accept="image/*" style="width: 100%; font-size: 10px; color: #ccc;"></div>
+            <div class="tool-row"><label>Pos X</label><input type="range" id="modal-sticker-x" min="-1000" max="3000" value="-20"></div>
+            <div class="tool-row"><label>Pos Y</label><input type="range" id="modal-sticker-y" min="-1000" max="3000" value="-20"></div>
+            <div class="tool-row"><label>Ancho</label><input type="range" id="modal-sticker-w" min="10" max="3000" value="150"></div>
+            <div class="tool-row"><label>Alto</label><input type="range" id="modal-sticker-h" min="0" max="3000" value="0" title="0 = Auto (Proporcional)"></div>
+       </div>
+
+       <!-- NUEVO GRUPO: OVERLAY VISUAL -->
+       <div class="tool-group">
+            <h4>Overlay Visual (Snake) <button id="export-overlay-css-btn" style="background: #27ae60; border:none; border-radius:3px; color:white; cursor:pointer; font-size:10px; padding:2px 5px;">Exportar CSS</button></h4>
+            <div class="tool-row"><label>Opac.</label><input type="range" id="overlay-opacity" min="0" max="1" step="0.05" value="0.5"></div>
+            <div class="tool-row"><label>Blur</label><input type="range" id="overlay-blur" min="0" max="20" step="1" value="5"></div>
+            <div class="tool-row"><label>Vis.</label><input type="checkbox" id="overlay-vis" checked></div>
+       </div>
+
+       <!-- NUEVO GRUPO: Playlist Layout -->
+       <div class="tool-group">
+            <h4>Playlist Layout <button id="export-list-css-btn" style="background: #27ae60; border:none; border-radius:3px; color:white; cursor:pointer; font-size:10px; padding:2px 5px;">Export CSS</button></h4>
+            <div class="tool-row"><label style="width:70px;">State 3 Slide</label><input type="number" id="state3-slide" value="130"><input type="range" id="state3-slide-range" min="0" max="600" value="130"></div>
+            <div class="tool-row"><label>BG W</label><input type="number" id="list-cont-w" value="475"><input type="range" id="list-cont-w-range" min="100" max="1500" value="475"></div>
+            <div class="tool-row"><label>BG H</label><input type="number" id="list-cont-h" value="273"><input type="range" id="list-cont-h-range" min="50" max="800" value="273"></div>
+            <div class="tool-row"><label>BG MB</label><input type="number" id="list-cont-mb" value="0"><input type="range" id="list-cont-mb-range" min="0" max="100" value="0"></div>
+            <div class="tool-row"><label>Off X</label><input type="number" id="list-off-x" value="167"><input type="range" id="list-off-x-range" min="-200" max="200" value="167"></div>
+            <div class="tool-row"><label>Off Y</label><input type="number" id="list-off-y" value="-48"><input type="range" id="list-off-y-range" min="-200" max="200" value="-48"></div>
+            <div class="tool-row"><label>Txt T</label><input type="number" id="list-ov-t" value="56"><input type="range" id="list-ov-t-range" min="0" max="200" value="56"></div>
+            <div class="tool-row"><label>Txt L</label><input type="number" id="list-ov-l" value="15"><input type="range" id="list-ov-l-range" min="0" max="200" value="15"></div>
+            <div class="tool-row"><label>Txt W</label><input type="number" id="list-ov-w" value="448"><input type="range" id="list-ov-w-range" min="100" max="1500" value="448"></div>
+            <div class="tool-row"><label>Txt H</label><input type="number" id="list-ov-h" value="198"><input type="range" id="list-ov-h-range" min="10" max="800" value="198"></div>
+       </div>
+
+       <!-- NUEVO GRUPO: AJUSTES LISTA & SCROLL -->
+       <div class="tool-group">
+            <h4>Ajustes Lista & Scroll</h4>
+            <div class="tool-row"><label style="width:70px;">Scroll Rad.</label><input type="range" id="scroll-radius" min="0" max="20" value="0"><input type="number" id="scroll-radius-num" value="0" style="width:40px;"></div>
+            <div class="tool-row"><label style="width:70px;">Thumb MinH</label><input type="range" id="scroll-thumb-min-h" min="10" max="100" value="46"><input type="number" id="scroll-thumb-min-h-num" value="46" style="width:40px;"></div>
+            
+            <h4 style="margin-top:10px;">Botón Lista</h4>
+            <div class="tool-row"><label>Pos X</label><input type="range" id="btn-list-x" min="-200" max="200" value="-101"><input type="number" id="btn-list-x-num" value="-101" style="width:40px;"></div>
+            <div class="tool-row"><label>Pos Y</label><input type="range" id="btn-list-y" min="-200" max="200" value="46"><input type="number" id="btn-list-y-num" value="46" style="width:40px;"></div>
+       </div>
+
+       <!-- NUEVO GRUPO: ESTILO VISUAL LISTA -->
+       <div class="tool-group">
+            <h4>Estilo Visual Lista</h4>
+            <div class="tool-row"><label style="width:70px;">Color Sel</label><input type="color" id="pl-sel-color" value="#000000" style="padding:0; border:none; height:20px;"></div>
+            <div class="tool-row"><label style="width:70px;">Opacidad</label><input type="range" id="pl-sel-opacity" min="0" max="1" step="0.01" value="0.15"><input type="number" id="pl-sel-opacity-num" value="0.15" style="width:40px;"></div>
+            <div class="tool-row"><label style="width:70px;">Escala</label><input type="range" id="pl-hover-scale" min="1" max="1.5" step="0.01" value="1.2"><input type="number" id="pl-hover-scale-num" value="1.2" style="width:40px;"></div>
+            <div class="tool-row"><label style="width:70px;">Anim (s)</label><input type="range" id="pl-anim-dur" min="0" max="1" step="0.01" value="0.05"><input type="number" id="pl-anim-dur-num" value="0.05" style="width:40px;"></div>
+       </div>
+
+       <!-- NUEVO GRUPO: DEBUG REPRODUCTOR -->
+       <div class="tool-group">
+            <h4>Debug Reproductor</h4>
+            <div class="tool-row" style="justify-content: flex-start; gap: 10px;">
+                <label style="width: auto;">Modo Diseño Lista</label>
+                <input type="checkbox" id="playlist-debug-toggle" style="width: auto; flex: 0;">
+            </div>
+       </div>
+       
+       <textarea id="css-output" readonly style="height: 100px; display:none;"></textarea>
+   </div>
+
+<script>
+(function() {
+    'use strict';
+
+    /**
+     * CONFIGURACIÓN CENTRALIZADA (Source of Truth)
+     */
+    const AppConfig = {
+        SELECTORS: {
+            player: '#player',
+            playerWrapper: '#player-wrapper',
+            audio: '#main-audio',
+            carousel: '.carousel-container',
+            calendar: '#calendar-box',
+            modal: '#modal',
+            gameModal: '#arcade-game-modal'
+        },
+        PLAYLIST: [
+            {
+                "title": "Always Forever",
+                "artist": "Desconocido",
+                "file": "musica/Always Forever.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Amiga da Minha Mulher",
+                "artist": "Desconocido",
+                "file": "musica/Amiga da Minha Mulher.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Amor De Verano",
+                "artist": "Desconocido",
+                "file": "musica/Amor De Verano.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Arruinarlo Todo",
+                "artist": "Desconocido",
+                "file": "musica/Arruinarlo Todo.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Añoranza Del Amor",
+                "artist": "Desconocido",
+                "file": "musica/Añoranza Del Amor.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Beautiful Boy (Darling Boy) (2010 Remastered)",
+                "artist": "Desconocido",
+                "file": "musica/Beautiful Boy (Darling Boy) (2010 Remastered).m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Besos, Limón y Miel",
+                "artist": "Desconocido",
+                "file": "musica/Besos, Limón y Miel.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Blue Hair",
+                "artist": "Desconocido",
+                "file": "musica/Blue Hair.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Brillo Mio",
+                "artist": "Desconocido",
+                "file": "musica/Brillo Mio.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Bubble Gum",
+                "artist": "Desconocido",
+                "file": "musica/Bubble Gum.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Bésame (Cnt. 1_1)",
+                "artist": "Desconocido",
+                "file": "musica/Bésame (Cnt. 1_1).m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Canción de Amor",
+                "artist": "Desconocido",
+                "file": "musica/Canción de Amor.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Cariño",
+                "artist": "Desconocido",
+                "file": "musica/Cariño.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Chica Acuario",
+                "artist": "Desconocido",
+                "file": "musica/Chica Acuario.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Compañera",
+                "artist": "Desconocido",
+                "file": "musica/Compañera.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Contigo",
+                "artist": "Desconocido",
+                "file": "musica/Contigo.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Cuando Regreses a Mi",
+                "artist": "Desconocido",
+                "file": "musica/Cuando Regreses a Mi.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "CURSI",
+                "artist": "Desconocido",
+                "file": "musica/CURSI.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Dopamina",
+                "artist": "Desconocido",
+                "file": "musica/Dopamina.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Dulcito e Coco",
+                "artist": "Desconocido",
+                "file": "musica/Dulcito e Coco.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "For the First Time",
+                "artist": "Desconocido",
+                "file": "musica/For the First Time.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Formula",
+                "artist": "Desconocido",
+                "file": "musica/Formula.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Fourth of July",
+                "artist": "Desconocido",
+                "file": "musica/Fourth of July.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Freak",
+                "artist": "Desconocido",
+                "file": "musica/Freak.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Goin' Out Of My Head",
+                "artist": "Desconocido",
+                "file": "musica/Goin' Out Of My Head.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Hard to Say Goodbye",
+                "artist": "Desconocido",
+                "file": "musica/Hard to Say Goodbye.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Heart To Heart",
+                "artist": "Desconocido",
+                "file": "musica/Heart To Heart.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "I Bet on Losing Dogs",
+                "artist": "Desconocido",
+                "file": "musica/I Bet on Losing Dogs.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Inside Out",
+                "artist": "Desconocido",
+                "file": "musica/Inside Out.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "La Declaración",
+                "artist": "Desconocido",
+                "file": "musica/La Declaración.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "La Luna",
+                "artist": "Desconocido",
+                "file": "musica/La Luna.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "La Raja de Tu Culo",
+                "artist": "Desconocido",
+                "file": "musica/La Raja de Tu Culo.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Limón y Sal",
+                "artist": "Desconocido",
+                "file": "musica/Limón y Sal.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Llena de Amor",
+                "artist": "Desconocido",
+                "file": "musica/Llena de Amor.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Love Me Not (feat. Rex Orange County)",
+                "artist": "Desconocido",
+                "file": "musica/Love Me Not (feat. Rex Orange County).m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Luna Completa",
+                "artist": "Desconocido",
+                "file": "musica/Luna Completa.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Mar",
+                "artist": "Desconocido",
+                "file": "musica/Mar.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Mariana",
+                "artist": "Desconocido",
+                "file": "musica/Mariana.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Materia Gris",
+                "artist": "Desconocido",
+                "file": "musica/Materia Gris.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Me and the Birds",
+                "artist": "Desconocido",
+                "file": "musica/Me and the Birds.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Meet You Again (Reimagined)",
+                "artist": "Desconocido",
+                "file": "musica/Meet You Again (Reimagined).m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Mi Corazón (feat. Natalia Lafourcade)",
+                "artist": "Desconocido",
+                "file": "musica/Mi Corazón (feat. Natalia Lafourcade).m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Niño Amor",
+                "artist": "Desconocido",
+                "file": "musica/Niño Amor.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Not Allowed",
+                "artist": "Desconocido",
+                "file": "musica/Not Allowed.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Nothing's New",
+                "artist": "Desconocido",
+                "file": "musica/Nothing's New.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Nunca Decís Tkm",
+                "artist": "Desconocido",
+                "file": "musica/Nunca Decís Tkm.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "O Pato",
+                "artist": "Desconocido",
+                "file": "musica/O Pato.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Ojitos de Md (Remix)",
+                "artist": "Desconocido",
+                "file": "musica/Ojitos de Md (Remix).m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Ojitos de Md",
+                "artist": "Desconocido",
+                "file": "musica/Ojitos de Md.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "On My Own (feat. NANDA)",
+                "artist": "Desconocido",
+                "file": "musica/On My Own (feat. NANDA).m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Otra Cerveza (feat. Crasa)",
+                "artist": "Desconocido",
+                "file": "musica/Otra Cerveza (feat. Crasa).m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Para Julio",
+                "artist": "Desconocido",
+                "file": "musica/Para Julio.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Parte de Mi",
+                "artist": "Desconocido",
+                "file": "musica/Parte de Mi.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Prom Queen",
+                "artist": "Desconocido",
+                "file": "musica/Prom Queen.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Pruébame a Ti",
+                "artist": "Desconocido",
+                "file": "musica/Pruébame a Ti.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Romantic Homicide",
+                "artist": "Desconocido",
+                "file": "musica/Romantic Homicide.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Románticos Anónimos",
+                "artist": "Desconocido",
+                "file": "musica/Románticos Anónimos.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Salto",
+                "artist": "Desconocido",
+                "file": "musica/Salto.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "She Is",
+                "artist": "Desconocido",
+                "file": "musica/She Is.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Si Tú Me Quisieras",
+                "artist": "Desconocido",
+                "file": "musica/Si Tú Me Quisieras.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Sin Vergüenza",
+                "artist": "Desconocido",
+                "file": "musica/Sin Vergüenza.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "space girl",
+                "artist": "Desconocido",
+                "file": "musica/space girl.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Step On Me",
+                "artist": "Desconocido",
+                "file": "musica/Step On Me.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "TOSCANA",
+                "artist": "Desconocido",
+                "file": "musica/TOSCANA.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Un Para Siempre",
+                "artist": "Desconocido",
+                "file": "musica/Un Para Siempre.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Verte Así",
+                "artist": "Desconocido",
+                "file": "musica/Verte Así.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Washing Machine Heart (Speed)",
+                "artist": "Desconocido",
+                "file": "musica/Washing Machine Heart (Speed).m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Washing Machine Heart",
+                "artist": "Desconocido",
+                "file": "musica/Washing Machine Heart.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Where'd All the Time Go？",
+                "artist": "Desconocido",
+                "file": "musica/Where'd All the Time Go？.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Y SI SOMOS NOVIOS？？？",
+                "artist": "Desconocido",
+                "file": "musica/Y SI SOMOS NOVIOS？？？.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Ya Me Hiciste Mal",
+                "artist": "Desconocido",
+                "file": "musica/Ya Me Hiciste Mal.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            },
+            {
+                "title": "Young",
+                "artist": "Desconocido",
+                "file": "musica/Young.m4a",
+                "img": "imagenes/albumes/default_cover.jpg"
+            }
+        ],
+        DATES: {
+            together: { id: 'time-together', date: new Date('October 11, 2025 00:00:00'), label: 'Estamos juntos desde:' },
+            met: { id: 'time-since-met', date: new Date('April 29, 2021 19:00:00'), label: 'Nos conocimos hace:' },
+            metIRL: { id: 'time-we-met-irl', date: new Date('September 20, 2025 21:28:00'), label: 'Nos vimos hace:' }
+        },
+        GAME: {
+            TILE_SIZE: 20,
+            GRID_W: 35,
+            GRID_H: 27,
+            DEFAULT_SPEED: 130
+        },
+        ANIMATIONS: {
+            doorFrameRate: 120,
+            carouselAutoScroll: 5000
+        }
+    };
+
+    /**
+     * UTILIDADES GENERALES
+     */
+    const Utils = {
+        get: (id) => document.getElementById(id),
+        query: (sel) => document.querySelector(sel),
+        queryAll: (sel) => document.querySelectorAll(sel),
+        isDesignMode: () => document.body.classList.contains('design-mode'),
+        
+        formatTime: (s) => {
+            if (isNaN(s)) return "0:00";
+            const mins = Math.floor(s / 60);
+            const secs = Math.floor(s % 60).toString().padStart(2, '0');
+            return `${mins}:${secs}`;
+        },
+
+        toggleDisplay: (el, show) => {
+            if (!el) return;
+            if (show) {
+                el.classList.add('show');
+                if (el.id === 'arcade-game-modal') document.body.classList.add('no-scroll');
+            } else {
+                el.classList.remove('show');
+                if (el.id === 'arcade-game-modal') document.body.classList.remove('no-scroll');
+            }
+        },
+
+        createEl: (tag, className, text) => {
+            const el = document.createElement(tag);
+            if (className) el.className = className;
+            if (text) el.textContent = text;
+            return el;
+        }
+    };
+
+    // --- MÓDULOS DE LÓGICA ---
+    
+    const MusicPlayer = (function() {
+        const state = { audio: null, playlist: [], currentIndex: 0, isPlaying: false, isExpanded: false };
+        const DOM = {};
+
+        function init() {
+            state.audio = Utils.get('main-audio');
+            if (!state.audio || !Utils.get('player')) return;
+            
+            DOM.albumImg = Utils.get('album-img');
+            DOM.barAlbumImg = Utils.get('bar-album-img');
+            DOM.songName = Utils.get('song-name');
+            DOM.artistName = Utils.get('artist-name');
+            DOM.playBtnMain = Utils.get('p-main');
+            DOM.playBtnOverlay = Utils.get('b-i') ? Utils.get('b-i').parentElement : null;
+            DOM.progressBar = Utils.get('p-f');
+            DOM.currentTime = Utils.get('cur');
+            DOM.duration = Utils.get('dur');
+
+            state.playlist = [...AppConfig.PLAYLIST];
+            const marcoImg = Utils.get('marco-img');
+            if (marcoImg) marcoImg.style.transform = `scale(2.08) translate(-14.8px, -4px)`;
+
+            renderPlaylist();
+            bindEvents();
+            loadTrack(0);
+            
+            // Autoplay intento
+            state.audio.play().then(() => { state.isPlaying = true; updateUI(); })
+                .catch(() => {
+                    const startAudioOnInteraction = () => {
+                        if (!state.isPlaying) {
+                            state.audio.play().then(() => {
+                                state.isPlaying = true; updateUI();
+                                document.removeEventListener('click', startAudioOnInteraction);
+                                document.removeEventListener('touchstart', startAudioOnInteraction);
+                                document.removeEventListener('keydown', startAudioOnInteraction);
+                            });
+                        }
+                    };
+                    document.addEventListener('click', startAudioOnInteraction);
+                    document.addEventListener('touchstart', startAudioOnInteraction);
+                    document.addEventListener('keydown', startAudioOnInteraction);
+                });
+            
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function renderPlaylist() {
+            const container = Utils.get('playlist-content-overlay');
+            if (!container) return;
+            container.innerHTML = '';
+            
+            state.playlist.forEach((track, index) => {
+                const item = Utils.createEl('div', 'playlist-static-item interactable');
+                if (!track.artist || track.artist === 'Desconocido') {
+                    item.innerHTML = `<span style="width:100%; text-align:left; font-weight:bold;">${track.title}</span>`;
+                } else {
+                    item.innerHTML = `<span>${track.title}</span><span style="opacity:0.7; font-size:0.9em;">${track.artist}</span>`;
+                }
+                item.addEventListener('click', (e) => { 
+                    e.stopPropagation(); 
+                    state.isPlaying = true; 
+                    loadTrack(index); 
+                });
+                if (index === state.currentIndex) item.classList.add('selected');
+                container.appendChild(item);
+                if (index < state.playlist.length - 1) container.appendChild(Utils.createEl('div', 'playlist-static-sep'));
+            });
+        }
+        
+        function highlightTrack() {
+            const items = document.querySelectorAll('.playlist-static-item');
+            items.forEach((item, index) => {
+                if (index === state.currentIndex) {
+                    item.classList.add('selected');
+                    item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                } else item.classList.remove('selected');
+            });
+        }
+
+        function bindEvents() {
+            Utils.query('.expand-trigger').addEventListener('click', toggleExpand);
+            if(DOM.playBtnMain) DOM.playBtnMain.addEventListener('click', togglePlay);
+            if(DOM.playBtnOverlay) DOM.playBtnOverlay.addEventListener('click', togglePlay);
+            const albumInner = Utils.query('.album-inner');
+            if (albumInner) albumInner.addEventListener('click', () => { if (!state.isExpanded) togglePlay(); });
+            Utils.get('prev-btn').addEventListener('click', (e) => { e.stopPropagation(); changeTrack(-1); });
+            Utils.get('next-btn').addEventListener('click', (e) => { e.stopPropagation(); changeTrack(1); });
+            Utils.get('p-c').addEventListener('click', seek);
+            const dirBtn = Utils.get('dir-btn');
+            const dirInput = Utils.get('dir-input');
+            if (dirBtn && dirInput) {
+                dirBtn.addEventListener('click', (e) => { e.stopPropagation(); dirInput.click(); });
+                dirInput.addEventListener('change', handleDirectorySelect);
+            }
+            const toggleListBtn = Utils.get('toggle-list-btn');
+            if (toggleListBtn) toggleListBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const wrapper = Utils.get('player-wrapper');
+                if(wrapper) wrapper.classList.toggle('playlist-visible');
+            });
+            state.audio.ontimeupdate = updateProgress;
+            state.audio.onloadedmetadata = () => { if(DOM.duration) DOM.duration.innerText = Utils.formatTime(state.audio.duration); };
+            state.audio.onended = () => changeTrack(1);
+            document.addEventListener('click', (e) => {
+                const wrapper = Utils.get('player-wrapper');
+                if (state.isExpanded && wrapper && !wrapper.contains(e.target)) toggleExpand();
+            });
+        }
+        
+        function forcePlay() {
+             if(!state.isPlaying) state.audio.play().then(() => { state.isPlaying = true; updateUI(); }).catch(() => {});
+        }
+
+        function handleDirectorySelect(e) {
+            const files = Array.from(e.target.files).filter(f => f.type.startsWith('audio/'));
+            if (files.length > 0) {
+                const wasEmpty = state.playlist.length === 0;
+                files.forEach(f => {
+                    let title = f.name.replace(/\.[^/.]+$/, "");
+                    let artist = "Desconocido";
+                    if (title.includes(" - ")) {
+                        const parts = title.split(" - ");
+                        artist = parts[0];
+                        title = parts.slice(1).join(" - ");
+                    }
+                    state.playlist.push({ title, artist, file: URL.createObjectURL(f), img: 'imagenes/albumes/default_cover.jpg' });
+                });
+                renderPlaylist();
+                if (wasEmpty) loadTrack(0);
+            }
+        }
+
+        function toggleExpand(e) {
+            if (Utils.isDesignMode()) return;
+            if (e) e.stopPropagation();
+            state.isExpanded = !state.isExpanded;
+            const player = Utils.get('player');
+            const wrapper = Utils.get('player-wrapper');
+            const trigger = Utils.query('.expand-trigger');
+            if (state.isExpanded) {
+                player.classList.remove('mode-bubble'); player.classList.add('mode-expanded'); wrapper.classList.add('expanded-state');
+                trigger.innerHTML = '<i data-lucide="x" class="w-6 h-6"></i>';
+            } else {
+                player.classList.add('mode-bubble'); player.classList.remove('mode-expanded'); wrapper.classList.remove('expanded-state');
+                player.style.width = ''; player.style.height = ''; 
+                trigger.innerHTML = '<i data-lucide="chevron-left" class="w-6 h-6"></i>';
+                wrapper.classList.remove('playlist-visible');
+            }
+            if (window.lucide) lucide.createIcons();
+            updateUI();
+        }
+
+        function loadTrack(index) {
+            if (!state.playlist.length) return;
+            if (index < 0) index = state.playlist.length - 1;
+            if (index >= state.playlist.length) index = 0;
+            state.currentIndex = index;
+            const track = state.playlist[state.currentIndex];
+            state.audio.src = track.file;
+            if(DOM.albumImg) DOM.albumImg.src = track.img;
+            if(DOM.barAlbumImg) DOM.barAlbumImg.src = track.img;
+            if(DOM.songName) DOM.songName.innerText = track.title;
+            if(DOM.artistName) DOM.artistName.innerText = track.artist || "Desconocido";
+            if (state.isPlaying) state.audio.play().catch(() => {});
+            updateUI();
+            highlightTrack();
+        }
+
+        function changeTrack(delta) { loadTrack(state.currentIndex + delta); }
+
+        function togglePlay(e) {
+            if (Utils.isDesignMode()) return;
+            if (e) e.stopPropagation();
+            state.isPlaying ? state.audio.pause() : state.audio.play().catch(() => {});
+            state.isPlaying = !state.isPlaying;
+            updateUI();
+        }
+
+        function updateUI() {
+            const iconName = state.isPlaying ? 'pause' : 'play';
+            const bi = Utils.get('b-i'); 
+            if (bi) bi.parentElement.innerHTML = `<i data-lucide="${iconName}" id="b-i" size="54" fill="currentColor"></i>`;
+            const pi = Utils.get('p-i'); 
+            if (pi) pi.parentElement.innerHTML = `<i data-lucide="${iconName}" id="p-i" size="24" fill="currentColor"></i>`;
+            if(DOM.albumImg) DOM.albumImg.classList.toggle('spinning', state.isPlaying && !state.isExpanded);
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function updateProgress() {
+            if (state.audio.duration && DOM.progressBar) {
+                DOM.progressBar.style.width = (state.audio.currentTime / state.audio.duration * 100) + '%';
+                if(DOM.currentTime) DOM.currentTime.innerText = Utils.formatTime(state.audio.currentTime);
+                if(DOM.duration) DOM.duration.innerText = Utils.formatTime(state.audio.duration);
+            }
+        }
+
+        function seek(e) {
+            if (Utils.isDesignMode()) return;
+            e.stopPropagation(); 
+            const bar = Utils.get('p-c');
+            if (state.audio.duration && bar) {
+                const percent = (e.clientX - bar.getBoundingClientRect().left) / bar.offsetWidth;
+                state.audio.currentTime = percent * state.audio.duration;
+            }
+        }
+        return { init, forcePlay };
+    })();
+
+    const EnvelopeAnimation = (function() {
+        let state = 0;
+        const IMAGES = ['imagenes/animaciones/sobre/sobre_cerrado.png','imagenes/animaciones/sobre/sobre_medio.png','imagenes/animaciones/sobre/sobre_abierto.png'];
+
+        function reset() {
+            state = 0;
+            const envelopeStage = Utils.get('envelope-stage');
+            const letterStage = Utils.get('letter-stage');
+            const envelopeImg = Utils.get('envelope-img');
+            if (envelopeStage) { envelopeStage.classList.remove('hidden-stage'); envelopeStage.style.display = 'flex'; envelopeStage.style.opacity = '1'; }
+            if (letterStage) { letterStage.classList.add('hidden-stage'); }
+            if (envelopeImg) { envelopeImg.src = IMAGES[0]; envelopeImg.style.transform = 'none'; }
+        }
+
+        function nextState() {
+            const envelopeImg = Utils.get('envelope-img');
+            if (envelopeImg) { envelopeImg.classList.remove('shake'); void envelopeImg.offsetWidth; envelopeImg.classList.add('shake'); }
+            state++;
+            setTimeout(() => {
+                if (state === 1 && envelopeImg) { envelopeImg.src = IMAGES[1]; envelopeImg.style.transform = 'rotate(-2deg) scale(1.05)'; }
+                else if (state === 2 && envelopeImg) { envelopeImg.src = IMAGES[2]; envelopeImg.style.transform = 'rotate(2deg) scale(1.1)'; }
+                else if (state === 3) {
+                    const envelopeStage = Utils.get('envelope-stage');
+                    const letterStage = Utils.get('letter-stage');
+                    if (envelopeStage) envelopeStage.style.opacity = '0';
+                    setTimeout(() => {
+                        if (envelopeStage) envelopeStage.classList.add('hidden-stage');
+                        if (letterStage) letterStage.classList.remove('hidden-stage');
+                        MusicPlayer.forcePlay();
+                    }, 500);
+                }
+            }, 200);
+        }
+
+        function init() {
+            const overlay = Utils.get('intro-overlay');
+            const envelopeStage = Utils.get('envelope-stage');
+            const openBtn = Utils.get('open-letter-btn');
+            if (openBtn) openBtn.addEventListener('click', (e) => { e.stopPropagation(); reset(); if (overlay) overlay.classList.remove('hidden'); });
+            if (envelopeStage) {
+                envelopeStage.addEventListener('click', (e) => { e.stopPropagation(); nextState(); });
+                envelopeStage.addEventListener('mouseenter', () => { if (state === 0) { const img = Utils.get('envelope-img'); if(img){ img.classList.remove('shake'); void img.offsetWidth; img.classList.add('shake'); } } });
+                envelopeStage.addEventListener('mouseleave', () => { if (state === 0) { const img = Utils.get('envelope-img'); if(img) img.classList.remove('shake'); } });
+            }
+            if (overlay) overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.add('hidden'); });
+        }
+        return { init };
+    })();
+
+    const TimeCounters = (function() {
+        function updateCounter(config) {
+            const el = Utils.get(config.id); if (!el) return;
+            const label = el.dataset.label || config.label;
+            const diff = new Date() - config.date;
+            const render = (bigText, smallText) => {
+                el.innerHTML = `<span style="font-weight: bold; color: var(--color-texto-claro);">${label}</span><span style="font-size: 1.5em; color: var(--color-texto-claro); font-weight: 900;">${bigText}</span><div style="font-size: 0.8em; color: #ccc;">${smallText}</div>`;
+            };
+            if (diff < 0) { render("¡Falta poco!", "Aún no hemos llegado a esa fecha."); return; }
+            const totalSeconds = Math.floor(diff / 1000);
+            const totalDays = Math.floor(totalSeconds / 86400);
+            const years = Math.floor(totalDays / 365.25);
+            const remainingDays = Math.floor(totalDays % 365.25);
+            const hours = Math.floor((totalSeconds % 86400) / 3600).toString().padStart(2, '0');
+            const minutes = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
+            const seconds = (totalSeconds % 60).toString().padStart(2, '0');
+            render(`${years} Años, ${remainingDays} Días`, `${hours} Horas, ${minutes} Minutos y ${seconds} Segundos`);
+        }
+        function init() { const tick = () => Object.values(AppConfig.DATES).forEach(updateCounter); tick(); setInterval(tick, 1000); }
+        return { init };
+    })();
+
+    const ImageCarousel = (function() {
+        const state = { currentSlide: 0, slides: [], indicators: [], interval: null, isAnimating: false, isReady: false };
+        function preloadImages(callback) {
+            const totalFrames = 9; let loaded = 0;
+            const onImageLoad = () => { loaded++; if (loaded === totalFrames) callback(); };
+            for (let i = 1; i <= totalFrames; i++) { const img = new Image(); img.onload = onImageLoad; img.onerror = onImageLoad; img.src = `imagenes/animaciones/puertas/Door_${i}.png`; }
+        }
+        function init() {
+            const container = Utils.query('.carousel-container'); if (!container) return;
+            let doorOverlay = Utils.get('door-overlay');
+            if (!doorOverlay) { doorOverlay = Utils.createEl('div', 'door-overlay'); doorOverlay.id = 'door-overlay'; container.appendChild(doorOverlay); }
+            doorOverlay.dataset.state = 1;
+            state.slides = Utils.queryAll('.slide-group');
+            if (!state.slides.length) return;
+            setupIndicators(); setupControls(container); updateContent(0);
+            preloadImages(() => { state.isReady = true; startAuto(); });
+        }
+        function setupIndicators() {
+            const container = Utils.query('.carousel-indicators'); container.innerHTML = '';
+            state.slides.forEach((_, i) => { const dot = Utils.createEl('div', 'interactable'); if (i === 0) dot.classList.add('active'); dot.dataset.index = i; container.appendChild(dot); });
+            state.indicators = Utils.queryAll('.carousel-indicators div');
+            container.addEventListener('click', (e) => { if (state.isAnimating || !state.isReady) return; const idx = parseInt(e.target.dataset.index); if (!isNaN(idx) && idx !== state.currentSlide) transitionTo(idx); });
+        }
+        function setupControls(container) {
+            container.addEventListener('click', (e) => {
+                if (state.isAnimating || !state.isReady) return;
+                if (e.target.closest('.carousel-arrow-left')) transitionTo(state.currentSlide - 1);
+                else if (e.target.closest('.carousel-arrow-right')) transitionTo(state.currentSlide + 1);
+            });
+            container.addEventListener('mouseenter', stopAuto); container.addEventListener('mouseleave', startAuto);
+        }
+        function transitionTo(targetIndex) {
+            if (state.isAnimating || !state.isReady) return;
+            state.isAnimating = true; stopAuto();
+            if (targetIndex < 0) targetIndex = state.slides.length - 1;
+            if (targetIndex >= state.slides.length) targetIndex = 0;
+            const doorOverlay = Utils.get('door-overlay'); let currentState = 1;
+            const animate = () => {
+                if (doorOverlay) doorOverlay.dataset.state = currentState;
+                if (currentState === 5) updateContent(targetIndex);
+                if (currentState < 9) { currentState++; setTimeout(animate, 80); }
+                else { setTimeout(() => { currentState = 1; if(doorOverlay) doorOverlay.dataset.state = 1; state.isAnimating = false; startAuto(); }, 80); }
+            };
+            animate();
+        }
+        function updateContent(index) {
+            state.currentSlide = index;
+            state.slides.forEach((s, i) => s.classList.toggle('active', i === index));
+            state.indicators.forEach((dot, i) => dot.classList.toggle('active', i === index));
+        }
+        function startAuto() { stopAuto(); if (state.isReady && !document.body.classList.contains('design-mode')) state.interval = setInterval(() => transitionTo(state.currentSlide + 1), AppConfig.ANIMATIONS.carouselAutoScroll); }
+        function stopAuto() { if (state.interval) clearInterval(state.interval); }
+        return { init };
+    })();
+
+    const CalendarWidget = (function() {
+        let currentMonth = new Date().getMonth(); let currentYear = new Date().getFullYear(); const today = new Date();
+        const CONSTS = { NAMES: ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"], DAYS: ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"] };
+        function init() {
+            const box = Utils.get('calendar-box'); if (!box) return;
+            render(currentMonth, currentYear);
+            box.addEventListener('click', (e) => { if (e.target.id === 'prev-month') changeMonth(-1); if (e.target.id === 'next-month') changeMonth(1); });
+        }
+        function changeMonth(delta) { currentMonth += delta; if (currentMonth < 0) { currentMonth = 11; currentYear--; } if (currentMonth > 11) { currentMonth = 0; currentYear++; } render(currentMonth, currentYear); }
+        function render(month, year) {
+            const grid = Utils.get('calendar-grid'); const label = Utils.get('month-year'); if (!grid || !label) return;
+            grid.innerHTML = ""; CONSTS.DAYS.forEach(d => grid.appendChild(Utils.createEl('div', '', d)));
+            const firstDay = new Date(year, month, 1).getDay(); const lastDate = new Date(year, month + 1, 0).getDate(); let day = 1;
+            for (let i = 0; i < 42; i++) {
+                const div = Utils.createEl('div');
+                if (i >= firstDay && day <= lastDate) {
+                    div.textContent = day;
+                    if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) div.classList.add('today');
+                    if (day === 11) { div.classList.add('special-day', 'interactable'); div.title = "Día especial"; }
+                    day++;
+                }
+                grid.appendChild(div);
+            }
+            label.textContent = `${CONSTS.NAMES[month]} ${year}`;
+        }
+        return { init };
+    })();
+
+    const SnakeGame = (function() {
+        let canvas, ctx, loopId;
+        const state = { active: false, gameOver: false, speed: AppConfig.GAME.DEFAULT_SPEED, snake: [], food: { x: 0, y: 0 }, dir: { x: 1, y: 0 }, nextDir: { x: 1, y: 0 }, score: 0, lastTime: 0, beat: 0 };
+        function init() {
+            stop(); canvas = Utils.get('arcade-game-canvas'); if (!canvas) return;
+            const newCanvas = canvas.cloneNode(true); canvas.parentNode.replaceChild(newCanvas, canvas); canvas = newCanvas; ctx = canvas.getContext('2d');
+            resetState(); spawnFood(); setupControls();
+            Utils.get('score-display').textContent = "Puntos: 0"; loopId = requestAnimationFrame(gameLoop);
+        }
+        function setDifficulty(level) {
+            const speeds = { 'normal': 130, 'hard': 80, 'expert': 50 };
+            state.speed = speeds[level] || 130;
+            if (!state.active || state.gameOver) init();
+        }
+        function resetState() { state.snake = [{x: 10, y: 10}, {x: 9, y: 10}, {x: 8, y: 10}]; state.dir = { x: 1, y: 0 }; state.nextDir = { x: 1, y: 0 }; state.score = 0; state.active = true; state.gameOver = false; }
+        function spawnFood() {
+            let valid = false;
+            while (!valid) { state.food.x = Math.floor(Math.random() * AppConfig.GAME.GRID_W); state.food.y = Math.floor(Math.random() * AppConfig.GAME.GRID_H); valid = !state.snake.some(s => s.x === state.food.x && s.y === state.food.y); }
+        }
+        function setupControls() {
+            window.addEventListener('keydown', handleKey);
+            let startX = 0, startY = 0;
+            canvas.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; startY = e.touches[0].clientY; e.preventDefault(); if (state.gameOver) init(); }, {passive: false});
+            canvas.addEventListener('touchmove', (e) => {
+                e.preventDefault(); if (state.gameOver) return;
+                const endX = e.touches[0].clientX; const endY = e.touches[0].clientY; const diffX = endX - startX; const diffY = endY - startY;
+                if (Math.abs(diffX) > Math.abs(diffY)) { if (Math.abs(diffX) > 30) { if (diffX > 0 && state.dir.x === 0) state.nextDir = { x: 1, y: 0 }; else if (diffX < 0 && state.dir.x === 0) state.nextDir = { x: -1, y: 0 }; startX = endX; startY = endY; } } 
+                else { if (Math.abs(diffY) > 30) { if (diffY > 0 && state.dir.y === 0) state.nextDir = { x: 0, y: 1 }; else if (diffY < 0 && state.dir.y === 0) state.nextDir = { x: 0, y: -1 }; startX = endX; startY = endY; } }
+            }, {passive: false});
+        }
+        function handleKey(e) {
+            const keys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '];
+            if (keys.includes(e.key)) e.preventDefault();
+            if (state.gameOver && keys.includes(e.key)) { init(); return; }
+            switch(e.key) { case 'ArrowUp': if(state.dir.y === 0) state.nextDir = { x: 0, y: -1 }; break; case 'ArrowDown': if(state.dir.y === 0) state.nextDir = { x: 0, y: 1 }; break; case 'ArrowLeft': if(state.dir.x === 0) state.nextDir = { x: -1, y: 0 }; break; case 'ArrowRight': if(state.dir.x === 0) state.nextDir = { x: 1, y: 0 }; break; }
+        }
+        function gameLoop(timestamp) {
+            if (!state.active) return;
+            if (timestamp - state.lastTime > state.speed) { update(); state.lastTime = timestamp; }
+            if (state.active) draw();
+            loopId = requestAnimationFrame(gameLoop);
+        }
+        function update() {
+            state.dir = state.nextDir;
+            const head = { x: state.snake[0].x + state.dir.x, y: state.snake[0].y + state.dir.y };
+            if (head.x < 0 || head.x >= AppConfig.GAME.GRID_W || head.y < 0 || head.y >= AppConfig.GAME.GRID_H || state.snake.some(s => s.x === head.x && s.y === head.y)) { gameOver(); return; }
+            state.snake.unshift(head);
+            if (head.x === state.food.x && head.y === state.food.y) { state.score += 10; Utils.get('score-display').textContent = `Puntos: ${state.score}`; spawnFood(); } else { state.snake.pop(); }
+        }
+        function draw() {
+            ctx.fillStyle = '#2c3e50'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)'; ctx.lineWidth = 1;
+            for (let i = 0; i <= canvas.width; i += AppConfig.GAME.TILE_SIZE) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke(); }
+            state.snake.forEach((seg, i) => {
+                ctx.fillStyle = i === 0 ? '#E0F7FA' : '#4DD0E1';
+                let x = seg.x * AppConfig.GAME.TILE_SIZE + 1, y = seg.y * AppConfig.GAME.TILE_SIZE + 1;
+                ctx.fillRect(x, y, AppConfig.GAME.TILE_SIZE - 2, AppConfig.GAME.TILE_SIZE - 2);
+                if (i === 0) { ctx.fillStyle = '#333'; ctx.beginPath(); ctx.arc(x + 5, y + 5, 2.5, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(x + 13, y + 5, 2.5, 0, Math.PI*2); ctx.fill(); }
+            });
+            state.beat += 0.1; const scale = 1 + Math.sin(state.beat) * 0.1;
+            const cx = state.food.x * AppConfig.GAME.TILE_SIZE + AppConfig.GAME.TILE_SIZE/2; const cy = state.food.y * AppConfig.GAME.TILE_SIZE + AppConfig.GAME.TILE_SIZE/2;
+            ctx.save(); ctx.translate(cx, cy); ctx.scale(scale, scale); ctx.translate(-cx, -cy); ctx.fillStyle = '#ff6b6b';
+            drawHeart(state.food.x * AppConfig.GAME.TILE_SIZE, state.food.y * AppConfig.GAME.TILE_SIZE + 2, AppConfig.GAME.TILE_SIZE); ctx.restore();
+        }
+        function drawHeart(x, y, size) {
+            ctx.beginPath(); ctx.moveTo(x, y + size / 4); ctx.quadraticCurveTo(x, y, x + size / 4, y); ctx.quadraticCurveTo(x + size / 2, y, x + size / 4, y + size / 4);
+            ctx.quadraticCurveTo(x + size / 2, y, x + size * 3/4, y); ctx.quadraticCurveTo(x + size, y, x + size, y + size / 4);
+            ctx.quadraticCurveTo(x + size, y + size / 2, x + size / 2, y + size * 3/4); ctx.quadraticCurveTo(x, y + size / 2, x, y + size / 4); ctx.fill();
+        }
+        function gameOver() {
+            state.active = false; state.gameOver = true;
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#ecf0f1'; ctx.font = 'bold 40px "Segoe UI"'; ctx.textAlign = 'center'; ctx.fillText("¡Bien Cojuda!", canvas.width/2, canvas.height/2 - 20);
+            ctx.font = '25px "Segoe UI"'; ctx.fillStyle = '#bdc3c7'; ctx.fillText("Puntos: " + state.score, canvas.width/2, canvas.height/2 + 20);
+            ctx.font = 'italic 18px "Segoe UI"'; ctx.fillStyle = '#95a5a6'; ctx.fillText("Presiona cualquier boton para continuar", canvas.width/2, canvas.height/2 + 60);
+        }
+        function stop() { state.active = false; if (loopId) cancelAnimationFrame(loopId); window.removeEventListener('keydown', handleKey); }
+        return { init, stop, setDifficulty };
+    })();
+
+    const ModalManager = (function() {
+        const modal = Utils.get('modal'); const arcadeModal = Utils.get('arcade-game-modal'); const overlay = Utils.get('intro-overlay');
+        function init() { document.body.addEventListener('click', handleGlobalClick); }
+        function handleGlobalClick(e) {
+            const target = e.target;
+            if (target === modal || target.id === 'close-edit-card') { Utils.toggleDisplay(modal, false); Utils.toggleDisplay(Utils.get('card-edit-modal'), false); return; }
+            if (target === arcadeModal || target.id === 'cerrar-game-modal') { Utils.toggleDisplay(arcadeModal, false); Utils.toggleDisplay(Utils.get('diff-selector-container'), false); SnakeGame.stop(); return; }
+            if (target.closest('.open-game-modal-btn')) { e.preventDefault(); Utils.toggleDisplay(arcadeModal, true); Utils.toggleDisplay(Utils.get('diff-selector-container'), true); setTimeout(() => SnakeGame.init(), 100); return; }
+            const card = target.closest('.card');
+            if (card) { e.preventDefault(); e.stopPropagation(); if (document.body.classList.contains('design-mode')) { CardEditor.open(card); } else { openSongModal(card); } return; }
+            if (target === overlay) { overlay.classList.add('hidden'); }
+            if (target.classList.contains('diff-hitbox')) {
+                const diff = target.dataset.difficulty; SnakeGame.setDifficulty(diff);
+                target.style.background = "rgba(255,255,255,0.3)"; setTimeout(() => target.style.background = "transparent", 200);
+            }
+        }
+        function openSongModal(card) {
+            Utils.get('modal-title').textContent = card.dataset.title; Utils.get('modal-desc').textContent = card.dataset.desc;
+            const imgLink = Utils.get('modal-image-link'); const modalImg = Utils.get('modal-img'); const cardImg = card.querySelector('img');
+            if (cardImg && modalImg) modalImg.src = cardImg.src;
+            if (imgLink) { imgLink.href = card.dataset.link || '#'; imgLink.style.pointerEvents = (card.dataset.link === '#') ? 'none' : 'auto'; imgLink.style.display = 'block'; }
+            Utils.toggleDisplay(modal, true);
+        }
+        return { init };
+    })();
+    
+    const ModalStickerController = (function() {
+        let activeSticker = null; let isDragging = false, isResizing = false; let startX, startY, startRight, startBottom, startWidth, startLeft, startTop;
+        function init() {
+            document.body.addEventListener('mousedown', handleMouseDown); document.body.addEventListener('touchstart', handleMouseDown, {passive: false});
+            document.addEventListener('mousemove', onMouseMove); document.addEventListener('touchmove', onMouseMove, {passive: false});
+            document.addEventListener('mouseup', onMouseUp); document.addEventListener('touchend', onMouseUp);
+        }
+        function handleMouseDown(e) {
+            if (!document.body.classList.contains('design-mode')) return;
+            const handle = e.target.closest('.sticker-handle'); const wrapper = e.target.closest('.modal-sticker-container');
+            if (handle && wrapper) { e.preventDefault(); e.stopPropagation(); startResize(e, wrapper); setActiveSticker(wrapper); return; }
+            if (wrapper) { e.preventDefault(); startMove(e, wrapper); setActiveSticker(wrapper); }
+        }
+        function setActiveSticker(wrapper) {
+            activeSticker = wrapper; const selector = Utils.get('sticker-selector'); const index = wrapper.id.split('-')[2];
+            if (selector) { selector.value = index; selector.dispatchEvent(new Event('change')); }
+            Utils.queryAll('.modal-sticker-container').forEach(el => el.classList.remove('editable')); activeSticker.classList.add('editable');
+        }
+        function getClientCoords(e) { return { x: e.touches ? e.touches[0].clientX : e.clientX, y: e.touches ? e.touches[0].clientY : e.clientY }; }
+        function startMove(e, wrapper) {
+            isDragging = true; activeSticker = wrapper; const {x, y} = getClientCoords(e); startX = x; startY = y;
+            const style = window.getComputedStyle(activeSticker);
+            startRight = parseFloat(activeSticker.style.right) || parseFloat(style.right) || 0;
+            startBottom = parseFloat(activeSticker.style.bottom) || parseFloat(style.bottom) || 0;
+            startLeft = parseFloat(activeSticker.style.left) || parseFloat(style.left) || 0;
+            startTop = parseFloat(activeSticker.style.top) || parseFloat(style.top) || 0;
+        }
+        function startResize(e, wrapper) { isResizing = true; activeSticker = wrapper; const {x} = getClientCoords(e); startX = x; startWidth = activeSticker.offsetWidth; }
+        function onMouseMove(e) {
+            if (!activeSticker || (!isDragging && !isResizing)) return;
+            const {x: clientX, y: clientY} = getClientCoords(e);
+            if (isDragging) {
+                const dx = startX - clientX; const dy = startY - clientY; 
+                if (activeSticker.style.right && activeSticker.style.right !== 'auto') { const val = startRight + dx; activeSticker.style.right = `${val}px`; updateInput('modal-sticker-x', val); }
+                else if (activeSticker.style.left && activeSticker.style.left !== 'auto') { const val = startLeft - dx; activeSticker.style.left = `${val}px`; updateInput('modal-sticker-x', val); }
+                if (activeSticker.style.bottom && activeSticker.style.bottom !== 'auto') { const val = startBottom + dy; activeSticker.style.bottom = `${val}px`; updateInput('modal-sticker-y', val); }
+                else if (activeSticker.style.top && activeSticker.style.top !== 'auto') { const val = startTop - dy; activeSticker.style.top = `${val}px`; updateInput('modal-sticker-y', val); }
+            }
+            if (isResizing) {
+                const dx = startX - clientX; const newWidth = Math.max(20, startWidth + dx);
+                activeSticker.style.width = `${newWidth}px`; activeSticker.style.height = 'auto'; updateInput('modal-sticker-w', newWidth); updateInput('modal-sticker-h', 0); 
+            }
+        }
+        function updateInput(id, val) { const input = Utils.get(id); if(input) input.value = val; }
+        function onMouseUp() { isDragging = false; isResizing = false; }
+        return { init };
+    })();
+
+    const ParticleSystem = (function() {
+        function init() { const container = Utils.get('particles-container'); if (!container) return; for (let i = 0; i < 20; i++) createParticle(container); }
+        function createParticle(container) {
+            const particle = Utils.createEl('div', 'particle'); const size = Math.random() * 5 + 2;
+            particle.style.width = `${size}px`; particle.style.height = `${size}px`; particle.style.top = `${Math.random() * 100}vh`; particle.style.left = `${Math.random() * 100}vw`;
+            const duration = Math.random() * 20 + 10; particle.style.setProperty('--duration', `${duration}s`);
+            particle.style.setProperty('--translateX', `${Math.random() * 200 - 100}px`); particle.style.setProperty('--translateY', `${Math.random() * 200 - 100}px`);
+            container.appendChild(particle);
+        }
+        return { init };
+    })();
+
+    const CardEditor = (function() {
+        let currentCard = null;
+        function init() {
+            const saveBtn = Utils.get('save-card-btn'); const addBtn = Utils.get('add-card-btn'); const exportBtn = Utils.get('export-html-btn');
+            if (saveBtn) saveBtn.addEventListener('click', saveChanges); if (addBtn) addBtn.addEventListener('click', addNewCard); if (exportBtn) exportBtn.addEventListener('click', exportHTML);
+        }
+        function open(card) {
+            currentCard = card; const modal = Utils.get('card-edit-modal'); const img = card.querySelector('img'); const h2 = card.querySelector('h2'); const sub = card.querySelector('.card-subtitle');
+            Utils.get('edit-card-title').value = h2 ? h2.textContent : ''; Utils.get('edit-card-subtitle').value = sub ? sub.textContent : '';
+            Utils.get('edit-card-link').value = card.dataset.link || ''; Utils.get('edit-card-img').value = img ? img.src : ''; Utils.get('edit-card-desc').value = card.dataset.desc || '';
+            Utils.toggleDisplay(modal, true);
+        }
+        function saveChanges() {
+            if (!currentCard) return;
+            const title = Utils.get('edit-card-title').value; const sub = Utils.get('edit-card-subtitle').value; const link = Utils.get('edit-card-link').value; const imgUrl = Utils.get('edit-card-img').value; const desc = Utils.get('edit-card-desc').value;
+            currentCard.dataset.title = title; currentCard.dataset.subtitle = sub; currentCard.dataset.link = link; currentCard.dataset.desc = desc;
+            const img = currentCard.querySelector('img'); const h2 = currentCard.querySelector('h2'); const subEl = currentCard.querySelector('.card-subtitle');
+            if (img) img.src = imgUrl; if (h2) h2.textContent = title; if (subEl) subEl.textContent = sub;
+            Utils.toggleDisplay(Utils.get('card-edit-modal'), false);
+        }
+        function addNewCard() {
+            const target = Utils.get('card-target-select').value;
+            const container = target === 'left' ? document.querySelector('.timeline-column.left .polaroids-wrapper') : document.querySelector('.timeline-column.right .polaroids-wrapper');
+            if (!container) return;
+            const card = Utils.createEl('div', 'card interactable');
+            card.dataset.title = "Nueva Carta"; card.dataset.subtitle = "Artista"; card.dataset.desc = "Descripción"; card.dataset.link = "#";
+            card.innerHTML = `<img src="imagenes/albumes/default.jpg" onerror="this.src='https://via.placeholder.com/200x240?text=Nueva+Imagen'" alt="Nueva Carta" loading="lazy"><div class="card-content"><h2>Nueva Carta</h2><span class="card-subtitle">Artista</span></div>`;
+            container.appendChild(card); card.scrollIntoView({ behavior: 'smooth' });
+        }
+        function exportHTML() {
+            const leftCols = document.querySelector('.timeline-column.left .polaroids-wrapper').innerHTML;
+            const rightCols = document.querySelector('.timeline-column.right .polaroids-wrapper').innerHTML;
+            const out = Utils.get('css-output'); out.style.display = 'block'; out.value = `<!-- COLUMNA IZQUIERDA -->\n${leftCols}\n\n<!-- COLUMNA DERECHA -->\n${rightCols}`; out.select(); document.execCommand('copy'); alert('HTML de cartas copiado al portapapeles');
+        }
+        return { init, open };
+    })();
+
+    const DesignTools = (function() {
+        function bindStyle(el, inputId, styleProp, unit = '') {
+            const input = Utils.get(inputId);
+            if (!input || !el) return;
+            input.addEventListener('input', () => { el.style[styleProp] = input.value + unit; });
+        }
+        function updateBg(el, url) { if(el && url) el.style.backgroundImage = `url('${url}')`; }
+        function handleFile(e, el) { if (e.target.files && e.target.files[0]) { const url = URL.createObjectURL(e.target.files[0]); updateBg(el, url); } }
+
+        function setupModalStickerControls() {
+            const selector = Utils.get('sticker-selector');
+            const visibleChk = Utils.get('sticker-visible');
+            const urlInput = Utils.get('modal-sticker-url');
+            const fileInput = Utils.get('modal-sticker-file');
+            const xInput = Utils.get('modal-sticker-x');
+            const yInput = Utils.get('modal-sticker-y');
+            const wInput = Utils.get('modal-sticker-w');
+            const hInput = Utils.get('modal-sticker-h');
+            const exportBtn = Utils.get('export-sticker-btn');
+            const out = Utils.get('css-output');
+
+            const getCurrentSticker = () => Utils.get(`modal-sticker-${selector ? selector.value : '1'}`);
+            const updateInputsFromSticker = () => {
+                const el = getCurrentSticker();
+                if(!el) return;
+                if(visibleChk) visibleChk.checked = el.style.display !== 'none';
+            };
+            if(selector) selector.addEventListener('change', updateInputsFromSticker);
+
+            const bindProp = (input, prop, unit='') => {
+                if(!input) return;
+                input.addEventListener('input', () => {
+                    const el = getCurrentSticker();
+                    if(el) {
+                        el.style[prop] = input.value + unit;
+                        if(prop === 'height' && input.value == 0) el.style.height = 'auto';
+                    }
+                });
+            };
+            if(xInput) xInput.addEventListener('input', () => { const el = getCurrentSticker(); if(el) { el.style.left = xInput.value + 'px'; el.style.right = 'auto'; } });
+            if(yInput) yInput.addEventListener('input', () => { const el = getCurrentSticker(); if(el) { el.style.top = yInput.value + 'px'; el.style.bottom = 'auto'; } });
+            bindProp(wInput, 'width', 'px');
+            if(hInput) hInput.addEventListener('input', () => { const el = getCurrentSticker(); if(el) el.style.height = (hInput.value == 0) ? 'auto' : hInput.value + 'px'; });
+            if(visibleChk) visibleChk.addEventListener('change', () => { const el = getCurrentSticker(); if(el) el.style.display = visibleChk.checked ? 'block' : 'none'; });
+            if(urlInput) urlInput.addEventListener('input', () => { const el = getCurrentSticker(); if(el) { const img = el.querySelector('img'); if(img) img.src = urlInput.value; } });
+            if(fileInput) fileInput.addEventListener('change', (e) => { if(e.target.files[0]) { const url = URL.createObjectURL(e.target.files[0]); const el = getCurrentSticker(); if(el) { const img = el.querySelector('img'); if(img) img.src = url; } } });
+            if(exportBtn) exportBtn.addEventListener('click', () => {
+               let html = '';
+               for(let i=1; i<=4; i++) {
+                   const el = Utils.get(`modal-sticker-${i}`);
+                   if(el) {
+                       const img = el.querySelector('img');
+                       const src = img ? img.getAttribute('src') : '';
+                       html += `<div id="modal-sticker-${i}" class="modal-sticker-container" style="${el.getAttribute('style')}">\n    <img class="sticker-img" src="${src}" onerror="this.src='https://media.tenor.com/a6a66d6d0a0a0a0a/cinnamoroll.gif'">\n    <div class="sticker-handle interactable"></div>\n</div>\n`;
+                   }
+               }
+               out.style.display = 'block'; out.value = html; out.select(); document.execCommand('copy'); alert('HTML Stickers Copiado');
+            });
+            const glassBtn = Utils.get('export-modal-style-btn');
+            if(glassBtn) glassBtn.addEventListener('click', () => {
+                const op = Utils.get('modal-glass-opacity').value; const blur = Utils.get('modal-glass-blur').value; const w = Utils.get('modal-width').value; const h = Utils.get('modal-height').value;
+                let css = `.modal-content {\n    background: rgba(255, 255, 255, ${op});\n    backdrop-filter: blur(${blur}px);\n    width: ${w}px;\n    height: ${h}px;\n}`;
+                out.style.display = 'block'; out.value = css; out.select(); document.execCommand('copy'); alert('CSS Modal Copiado');
+            });
+            const modalContent = Utils.query('.modal-content');
+            if(modalContent) {
+                bindStyle(modalContent, 'modal-width', 'width', 'px'); bindStyle(modalContent, 'modal-height', 'height', 'px');
+                const gOp = Utils.get('modal-glass-opacity'); if(gOp) gOp.addEventListener('input', () => modalContent.style.background = `rgba(255,255,255,${gOp.value})`);
+            }
+        }
+
+        function setupCardTools() {}
+
+        function init() {
+            const btn = Utils.get('design-tool-btn'); const panel = Utils.get('design-tool-panel');
+            if (btn) btn.addEventListener('click', () => { panel.classList.toggle('hidden'); document.body.classList.toggle('design-mode'); });
+            setupGroup(setupBackgroundControls); setupGroup(setupCalendarControls); setupGroup(setupPlayerControls);
+            setupGroup(setupModalStickerControls); setupGroup(setupCardTools); setupGroup(setupPlaylistGenerator); 
+            setupGroup(setupOverlayControls); setupGroup(setupListControls); setupGroup(setupDebugControls); 
+        }
+        function setupGroup(fn) { try { fn(); } catch(e) { console.warn("DesignTool module error", e); } }
+        function setupDebugControls() { const chk = Utils.get('playlist-debug-toggle'); if (chk) { chk.addEventListener('change', () => { document.body.classList.toggle('playlist-debug-mode', chk.checked); }); } }
+        function setupOverlayControls() {
+            const el = Utils.get('game-blur-layer'); if (!el) return;
+            const opInput = Utils.get('overlay-opacity'); const blurInput = Utils.get('overlay-blur'); const visInput = Utils.get('overlay-vis'); const expBtn = Utils.get('export-overlay-css-btn'); const out = Utils.get('css-output');
+            const update = () => { const blur = blurInput.value; const op = opInput.value; el.style.backdropFilter = `blur(${blur}px)`; el.style.background = `rgba(0, 0, 0, ${op})`; el.style.display = visInput.checked ? 'block' : 'none'; };
+            if (opInput) opInput.addEventListener('input', update); if (blurInput) blurInput.addEventListener('input', update); if (visInput) visInput.addEventListener('change', update);
+            if (expBtn) { expBtn.addEventListener('click', () => { const blur = blurInput.value; const op = opInput.value; let css = `/* Overlay Visual (Snake) */\n#game-blur-layer {\n    backdrop-filter: blur(${blur}px) !important;\n    background: rgba(0, 0, 0, ${op}) !important;\n${!visInput.checked ? '    display: none !important;\n' : ''}}`; out.style.display = 'block'; out.value = css; out.select(); document.execCommand('copy'); alert('CSS Overlay Copiado'); }); }
+        }
+        function setupPlaylistGenerator() {
+            const dirInput = Utils.get('json-dir-input'); const basePathInput = Utils.get('json-base-path'); const out = Utils.get('css-output');
+            if (dirInput) { dirInput.addEventListener('change', (e) => { const files = Array.from(e.target.files).filter(f => f.type.startsWith('audio/') || f.name.endsWith('.mp3') || f.name.endsWith('.m4a')); const basePath = basePathInput.value || ''; const playlist = files.map(f => { let name = f.name.replace(/\.[^/.]+$/, ""); let artist = "Desconocido"; if (name.includes(" - ")) { const parts = name.split(" - "); artist = parts[0].trim(); name = parts.slice(1).join(" - ").trim(); } return { title: name, artist: artist, file: `${basePath}${f.name}`, img: "imagenes/albumes/default_cover.jpg" }; }); out.style.display = 'block'; out.value = JSON.stringify(playlist, null, 4); alert(`Generados ${playlist.length} items. Copia el JSON del cuadro de texto.`); }); }
+        }
+        function setupBackgroundControls() {
+            const bgEl = Utils.get('page-background'); if (!bgEl) return;
+            const update = () => { const op = Utils.get('bg-opacity').value; const sat = Utils.get('bg-saturate').value; const blur = Utils.get('bg-blur').value; bgEl.style.filter = `saturate(${sat}) opacity(${op}) blur(${blur}px)`; };
+            ['bg-opacity', 'bg-saturate', 'bg-blur'].forEach(id => Utils.get(id)?.addEventListener('input', update));
+        }
+        function setupCalendarControls() {
+            const el = Utils.get('calendar-box'); const layer = Utils.get('calendar-bg-layer'); if (!el || !layer) return;
+            bindStyle(el, 'calendar-width', 'width', 'px'); bindStyle(el, 'calendar-height', 'height', 'px');
+            const op = Utils.get('calendar-bg-opacity'); const blur = Utils.get('calendar-bg-blur');
+            const updateFilter = () => layer.style.filter = `opacity(${op.value}) blur(${blur.value}px)`;
+            if (op) op.addEventListener('input', updateFilter); if (blur) blur.addEventListener('input', updateFilter);
+            const urlIn = Utils.get('calendar-bg-url'); const fileIn = Utils.get('calendar-bg-file');
+            if (urlIn) urlIn.addEventListener('input', () => updateBg(layer, urlIn.value));
+            if (fileIn) fileIn.addEventListener('change', (e) => handleFile(e, layer));
+        }
+        function setupPlayerControls() {
+            const wrap = Utils.get('player-wrapper'); if (!wrap) return;
+            const bindings = { 'player-pos-x': (v) => wrap.style.right = v + 'px', 'player-pos-y': (v) => wrap.style.bottom = v + 'px', 'player-scale': (v) => wrap.style.setProperty('--scale', v), 'player-exp-x': (v) => wrap.style.setProperty('--w-r-exp', v + 'px'), 'player-exp-y': (v) => wrap.style.setProperty('--w-b-exp', v + 'px'), 'player-exp-w': (v) => wrap.style.setProperty('--exp-w', v + 'px'), 'player-exp-h': (v) => wrap.style.setProperty('--exp-h', v + 'px'), 'close-btn-list-x': (v) => wrap.style.setProperty('--xt-r-list', v + 'px'), 'close-btn-list-y': (v) => wrap.style.setProperty('--xt-t-list', v + 'px') };
+            Object.keys(bindings).forEach(id => { const el = Utils.get(id); if(el) el.addEventListener('input', () => bindings[id](el.value)); });
+            const btn = Utils.get('export-player-config-btn'); const out = Utils.get('css-output');
+            if(btn) btn.addEventListener('click', () => { const w = Utils.get('player-exp-w').value; const h = Utils.get('player-exp-h').value; const listX = Utils.get('close-btn-list-x').value; const listY = Utils.get('close-btn-list-y').value; let css = `/* Configuración Jugador */\n#player-wrapper {\n    --exp-w: ${w}px;\n    --exp-h: ${h}px;\n    --xt-r-list: ${listX}px;\n    --xt-t-list: ${listY}px;\n}\n`; out.style.display = 'block'; out.value = css; out.select(); document.execCommand('copy'); alert('CSS Config Jugador Copiado'); });
+        }
+        function setupListControls() {
+            const container = Utils.get('playlist-container'); const overlay = Utils.get('playlist-content-overlay'); const manualWrapper = Utils.get('playlist-manual-wrapper'); const playerWrapper = Utils.get('player-wrapper'); const btn = Utils.get('export-list-css-btn'); const out = Utils.get('css-output');
+            const controls = [ { id: 'list-cont-w', el: container, prop: 'width', unit: 'px' }, { id: 'list-cont-h', el: container, prop: 'height', unit: 'px' }, { id: 'list-cont-mb', el: container, prop: 'marginBottom', unit: 'px' }, { id: 'list-ov-t', el: overlay, prop: 'top', unit: 'px' }, { id: 'list-ov-l', el: overlay, prop: 'left', unit: 'px' }, { id: 'list-ov-w', el: overlay, prop: 'width', unit: 'px' }, { id: 'list-ov-h', el: overlay, prop: 'height', unit: 'px' } ];
+            controls.forEach(ctrl => { const numInput = Utils.get(ctrl.id); const rngInput = Utils.get(ctrl.id + '-range'); const update = (val) => { ctrl.el.style[ctrl.prop] = val + ctrl.unit; if (numInput && numInput.value != val) numInput.value = val; if (rngInput && rngInput.value != val) rngInput.value = val; }; if (numInput) numInput.addEventListener('input', () => update(numInput.value)); if (rngInput) rngInput.addEventListener('input', () => update(rngInput.value)); });
+            const s3Num = Utils.get('state3-slide'); const s3Rng = Utils.get('state3-slide-range'); const updateState3 = (val) => { if (playerWrapper) playerWrapper.style.setProperty('--state3-slide-amount', val + 'px'); if (s3Num && s3Num.value != val) s3Num.value = val; if (s3Rng && s3Rng.value != val) s3Rng.value = val; }; if(s3Num) s3Num.addEventListener('input', () => updateState3(s3Num.value)); if(s3Rng) s3Rng.addEventListener('input', () => updateState3(s3Rng.value));
+            const offXNum = Utils.get('list-off-x'); const offXRng = Utils.get('list-off-x-range'); const offYNum = Utils.get('list-off-y'); const offYRng = Utils.get('list-off-y-range');
+            const updateOffset = () => { const x = offXNum.value; const y = offYNum.value; if (manualWrapper) manualWrapper.style.transform = `translate(${x}px, ${y}px)`; if (offXRng.value != x) offXRng.value = x; if (offYRng.value != y) offYRng.value = y; if (offXNum.value != offXRng.value) offXNum.value = offXRng.value; if (offYNum.value != offYRng.value) offYNum.value = offYRng.value; };
+            if(offXNum && offXRng) { offXNum.addEventListener('input', updateOffset); offXRng.addEventListener('input', () => { offXNum.value = offXRng.value; updateOffset(); }); }
+            if(offYNum && offYRng) { offYNum.addEventListener('input', updateOffset); offYRng.addEventListener('input', () => { offYNum.value = offYRng.value; updateOffset(); }); }
+            
+            // --- NUEVOS CONTROLES ---
+            const scrollRad = Utils.get('scroll-radius'); const scrollRadNum = Utils.get('scroll-radius-num');
+            const updateScrollRad = (v) => { 
+                document.documentElement.style.setProperty('--scrollbar-radius', v + 'px');
+                if(scrollRad && scrollRad.value != v) scrollRad.value = v;
+                if(scrollRadNum && scrollRadNum.value != v) scrollRadNum.value = v;
+            };
+            if(scrollRad) scrollRad.addEventListener('input', () => updateScrollRad(scrollRad.value));
+            if(scrollRadNum) scrollRadNum.addEventListener('input', () => updateScrollRad(scrollRadNum.value));
+
+            const scrollThumbH = Utils.get('scroll-thumb-min-h'); const scrollThumbHNum = Utils.get('scroll-thumb-min-h-num');
+            const updateScrollThumbH = (v) => {
+                document.documentElement.style.setProperty('--scrollbar-thumb-min-height', v + 'px');
+                if(scrollThumbH && scrollThumbH.value != v) scrollThumbH.value = v;
+                if(scrollThumbHNum && scrollThumbHNum.value != v) scrollThumbHNum.value = v;
+            };
+            if(scrollThumbH) scrollThumbH.addEventListener('input', () => updateScrollThumbH(scrollThumbH.value));
+            if(scrollThumbHNum) scrollThumbHNum.addEventListener('input', () => updateScrollThumbH(scrollThumbHNum.value));
+
+            const btnX = Utils.get('btn-list-x'); const btnXNum = Utils.get('btn-list-x-num');
+            const btnY = Utils.get('btn-list-y'); const btnYNum = Utils.get('btn-list-y-num');
+            
+            const updateBtnPos = () => {
+                const x = btnX.value; const y = btnY.value;
+                document.documentElement.style.setProperty('--btn-list-x', x + 'px');
+                document.documentElement.style.setProperty('--btn-list-y', y + 'px');
+                if(btnXNum && btnXNum.value != x) btnXNum.value = x;
+                if(btnYNum && btnYNum.value != y) btnYNum.value = y;
+            };
+            [btnX, btnY, btnXNum, btnYNum].forEach(el => el?.addEventListener('input', updateBtnPos));
+
+            // --- CONTROLES ESTILO PLAYLIST ---
+            const styleInputs = [
+                { id: 'pl-sel-color', var: '--pl-sel-color', suffix: '' },
+                { id: 'pl-sel-opacity', var: '--pl-sel-opacity', suffix: '' },
+                { id: 'pl-hover-scale', var: '--pl-hover-scale', suffix: '' },
+                { id: 'pl-anim-dur', var: '--pl-anim-dur', suffix: 's' }
+            ];
+            styleInputs.forEach(item => {
+                const el = Utils.get(item.id);
+                if(el) {
+                    el.addEventListener('input', () => {
+                        document.documentElement.style.setProperty(item.var, el.value + item.suffix);
+                        const numEl = Utils.get(item.id + '-num');
+                        if(numEl) numEl.value = el.value;
+                    });
+                    const numEl = Utils.get(item.id + '-num');
+                    if(numEl) numEl.addEventListener('input', () => {
+                        el.value = numEl.value;
+                        el.dispatchEvent(new Event('input'));
+                    });
+                }
+            });
+
+            if (btn) { btn.addEventListener('click', () => { 
+                const w = Utils.get('list-cont-w').value; 
+                const h = Utils.get('list-cont-h').value; 
+                const mb = Utils.get('list-cont-mb').value; 
+                const ot = Utils.get('list-ov-t').value; 
+                const ol = Utils.get('list-ov-l').value; 
+                const ow = Utils.get('list-ov-w').value; 
+                const oh = Utils.get('list-ov-h').value; 
+                const offX = Utils.get('list-off-x').value; 
+                const offY = Utils.get('list-off-y').value; 
+                const slideAmount = Utils.get('state3-slide').value; 
+                
+                // Nuevos valores para exportar
+                const sRad = Utils.get('scroll-radius').value;
+                const bX = Utils.get('btn-list-x').value;
+                const bY = Utils.get('btn-list-y').value;
+                const sMinH = Utils.get('scroll-thumb-min-h').value;
+
+                // Valores Estilo Visual
+                const plColor = Utils.get('pl-sel-color').value;
+                const plOp = Utils.get('pl-sel-opacity').value;
+                const plScale = Utils.get('pl-hover-scale').value;
+                const plAnim = Utils.get('pl-anim-dur').value;
+
+                let css = `/* Playlist Layout */
+:root {
+    --scrollbar-radius: ${sRad}px;
+    --btn-list-x: ${bX}px;
+    --btn-list-y: ${bY}px;
+    --scrollbar-thumb-min-height: ${sMinH}px;
+    
+    /* Variables Visuales Playlist */
+    --pl-sel-color: ${plColor};
+    --pl-sel-opacity: ${plOp};
+    --pl-hover-scale: ${plScale};
+    --pl-anim-dur: ${plAnim}s;
+}
+#player-wrapper {
+    --state3-slide-amount: ${slideAmount}px;
+}
+#playlist-container {
+    width: ${w}px;
+    height: ${h}px;
+    margin-bottom: ${mb}px;
+}
+#playlist-manual-wrapper {
+    transform: translate(${offX}px, ${offY}px);
+}
+#playlist-content-overlay {
+    top: ${ot}px;
+    left: ${ol}px;
+    width: ${ow}px;
+    height: ${oh}px;
+}`; out.style.display = 'block'; out.value = css; out.select(); document.execCommand('copy'); alert('CSS Playlist Copiado'); }); }
+        }
+        return { init };
+    })();
+
+    // --- INICIALIZACIÓN PRINCIPAL ---
+    document.addEventListener('DOMContentLoaded', () => {
+        TimeCounters.init(); ImageCarousel.init(); CalendarWidget.init(); ParticleSystem.init();
+        ModalManager.init(); MusicPlayer.init(); EnvelopeAnimation.init(); DesignTools.init();
+        CardEditor.init(); ModalStickerController.init();
+        if (window.lucide) lucide.createIcons();
+    });
+})();
+</script>
+</body>
+</html>

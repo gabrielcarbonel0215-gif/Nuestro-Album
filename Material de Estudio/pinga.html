@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Para Ti 💖</title>
+    <style>
+        /* 🎨 ESTILOS (CSS) */
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #ffdde1, #ee9ca7);
+            text-align: center;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        h1 {
+            margin-top: 20px;
+            font-size: 2.5em;
+        }
+        .btn {
+            display: inline-block;
+            margin: 15px;
+            padding: 12px 25px;
+            background-color: white;
+            border-radius: 25px;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1em;
+            transition: 0.3s;
+        }
+        .btn:hover {
+            background-color: #ffccd5;
+        }
+        .song {
+            display: none;
+            margin-top: 20px;
+        }
+        .dedicatoria {
+            font-style: italic;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 🖼️ ENCABEZADO -->
+    <h1>Esto es para ti 💌</h1>
+    <p>Selecciona una canción...</p>
+
+    <!-- 📷 IMAGEN SECRETA (decorativa y para desbloquear el juego) -->
+    <img src="imagen_principal.jpg" id="imagen-secreta" alt="Imagen especial"
+         style="max-width: 300px; border-radius: 15px; cursor: pointer;">
+
+    <br><br>
+
+    <!-- 🎵 BOTONES DE CANCIONES -->
+    <button class="btn" onclick="mostrarCancion(1)">Canción 1</button>
+    <button class="btn" onclick="mostrarCancion(2)">Canción 2</button>
+    <button class="btn" onclick="mostrarCancion(3)">Canción 3</button>
+
+    <!-- 🎶 SECCIONES DE CANCIONES -->
+    <div id="song1" class="song">
+        <h2>🌹 Canción 1</h2>
+        <audio controls>
+            <source src="tu_cancion_1.mp3" type="audio/mpeg">
+            Tu navegador no soporta audio.
+        </audio>
+        <p class="dedicatoria">Aquí escribes tu interpretación y por qué me recuerda a ti...</p>
+    </div>
+
+    <div id="song2" class="song">
+        <h2>🌙 Canción 2</h2>
+        <audio controls>
+            <source src="tu_cancion_2.mp3" type="audio/mpeg">
+            Tu navegador no soporta audio.
+        </audio>
+        <p class="dedicatoria">Aquí va tu mensaje personal...</p>
+    </div>
+
+    <div id="song3" class="song">
+        <h2>✨ Canción 3</h2>
+        <audio controls>
+            <source src="tu_cancion_3.mp3" type="audio/mpeg">
+            Tu navegador no soporta audio.
+        </audio>
+        <p class="dedicatoria">Aquí va otro pedazo de tu corazón...</p>
+    </div>
+
+    <!-- 🎮 BOTÓN SECRETO DEL JUEGO (oculto al inicio) -->
+    <div>
+        <button id="boton-secreto" class="btn" style="display:none; margin-top: 30px;" onclick="irAlJuego()">
+            🎮 Sorpresa
+        </button>
+    </div>
+
+    <!-- ⚙️ SCRIPT (JavaScript) -->
+    <script>
+        function mostrarCancion(num) {
+            // Oculta todas las canciones
+            document.querySelectorAll('.song').forEach(s => s.style.display = 'none');
+            // Muestra solo la seleccionada
+            document.getElementById('song' + num).style.display = 'block';
+        }
+
+        // Evento: al hacer clic en la imagen, aparece el botón del juego
+        document.getElementById('imagen-secreta').addEventListener('click', function() {
+            document.getElementById('boton-secreto').style.display = 'inline-block';
+        });
+
+        function irAlJuego() {
+            // Esto llevará al juego (cuando lo tengamos listo)
+            window.location.href = "juego.html"; 
+        }
+    </script>
+</body>
+</html>

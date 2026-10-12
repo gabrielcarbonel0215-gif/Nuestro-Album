@@ -1,0 +1,3156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nuestro Álbum de Recuerdos</title>
+
+    <!-- [1. LIBRERÍAS DEL REPRODUCTOR] -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    
+<style>
+/* --- 1. Variables y Reset Básico --- */
+:root {
+    --color-principal: #4682B4; /* Azul Marino (Elegante) */
+    --color-acento: #ff4d6d; /* Rosa (Amor/Dulce) */
+    --color-fondo-claro: rgba(255, 255, 255, 0.95);
+    --color-texto-oscuro: #333;
+    --color-texto-claro: #fff;
+    --font-family: 'Segoe UI', sans-serif;
+    /* Colores para el modo oscuro del juego */
+    --game-bg: #2c3e50;
+    --game-ui-bg: rgba(0, 0, 0, 0.6);
+    --game-text: #ecf0f1;
+    /* Colores Cinnamoroll Theme */
+    --cinna-blue-dark: #4facfe;
+    --cinna-blue-light: #00f2fe;
+    --cinna-cream: #fffdf5;
+    --cinna-border: #8ec5fc;
+}
+
+/* Reset Global para evitar errores de cálculo */
+* {
+    box-sizing: border-box;
+}
+
+/* Bloquear scroll cuando el juego está abierto */
+body.no-scroll {
+    overflow: hidden;
+}
+
+/* Clase interactable para aplicar el cursor pointer/grab/help */
+.interactable {
+    cursor: url('imagenes/cinnamoroll_pointer.png'), pointer !important;
+}
+
+.draggable {
+    cursor: url('imagenes/cinnamoroll_grab.png'), grab !important;
+}
+
+.draggable:active {
+    cursor: url('imagenes/cinnamoroll_grabbing.png'), grabbing !important;
+}
+
+body {
+    font-family: var(--font-family);
+    margin: 0; padding: 0;
+    /* Fondo movido a #page-background para permitir filtros */
+    background-color: #f0f0f0; 
+    color: var(--color-texto-oscuro); 
+    text-align: center;
+    overflow-x: hidden;
+    position: relative;
+    cursor: url('imagenes/cinnamoroll_default.png'), default; 
+}
+
+/* NUEVO: Capa de fondo dedicada para aplicar filtros */
+#page-background {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: -10; /* Detrás de todo */
+    background-image: url('imagenes/fondo.jpg');
+    background-size: cover;      
+    background-position: center; 
+    background-repeat: no-repeat;
+    /* Valores iniciales de filtros */
+    filter: saturate(1) opacity(1) blur(0px);
+    transition: filter 0.1s linear; /* Transición suave para los cambios */
+}
+
+/* INDICADOR VISUAL DE MODO DISEÑO (CARTAS EDITABLES) */
+body.design-mode .card {
+    border: 2px dashed #00f2fe !important;
+    animation: pulse-border 2s infinite;
+}
+body.design-mode .card:hover {
+    border-color: #ff4d6d !important;
+    cursor: alias !important; /* Cursor diferente para indicar edición */
+    transform: scale(1.02);
+}
+@keyframes pulse-border {
+    0% { border-color: #00f2fe; box-shadow: 0 0 5px rgba(0, 242, 254, 0.5); }
+    50% { border-color: rgba(0, 242, 254, 0.3); box-shadow: 0 0 0 rgba(0,0,0,0); }
+    100% { border-color: #00f2fe; box-shadow: 0 0 5px rgba(0, 242, 254, 0.5); }
+}
+
+.main-content-wrapper {
+    max-width: 1300px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* --- ESTILOS DEL REPRODUCTOR HÍBRIDO (Burbuja Original -> Marco Cinnamoroll) --- */
+/* --- CALIBRACIÓN SOLICITADA --- */
+#player-wrapper { 
+    position: fixed;
+    bottom: 44px; right: 44px; 
+    z-index: 5000;
+    --scale: 0.65; 
+    --bt-t: 59%; --bt-r: 187px; 
+    --xt-t: 114px; --xt-r: 154px; 
+    --w-b-exp: 30px; --w-r-exp: 0px; 
+    --tr-sw: 5px;
+    
+    transform: scale(var(--scale));
+    transform-origin: bottom right;
+    
+    transition: bottom 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), 
+                right 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+                transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ESTADO EXPANDIDO DEL WRAPPER (Posición Independiente) */
+#player-wrapper.expanded-state {
+    bottom: var(--w-b-exp) !important;
+    right: var(--w-r-exp) !important;
+}
+
+/* Botón Expansor */
+.expand-trigger { 
+    position: absolute; 
+    top: var(--bt-t); 
+    right: var(--bt-r); 
+    transform: translateY(-50%); 
+    cursor: pointer; 
+    /* CAMBIO: Color Negro */
+    color: #000; 
+    z-index: 60; 
+    transition: all 0.4s ease;
+    /* CAMBIO: Eliminado el círculo blanco de fondo */
+    background: transparent; 
+    border-radius: 50%;
+    width: 40px; height: 40px;
+    display: flex; align-items: center; justify-content: center;
+    /* CAMBIO: Eliminada la sombra para hacerlo más limpio */
+    box-shadow: none; 
+}
+
+/* Control del grosor del SVG */
+.expand-trigger svg {
+    stroke-width: var(--tr-sw) !important;
+    transition: stroke-width 0.2s ease;
+}
+
+.expand-trigger:hover { 
+    transform: translateY(-50%) scale(1.1);
+    color: #333;
+    /* Opcional: añadir un brillo sutil al hover en lugar de fondo */
+    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.8));
+}
+
+/* ESTADO EXPANDIDO DEL TRIGGER (Botón X Visible - CAMUFLADO) */
+.expanded-state .expand-trigger { 
+    /* Valores usando variables para control dinámico */
+    right: var(--xt-r); 
+    top: var(--xt-t);   
+    width: 35px; height: 35px;
+    
+    /* CAMBIO: Transparente y sin bordes */
+    background: transparent; 
+    border: none;
+    box-shadow: none;
+    
+    color: #fff; /* Icono blanco */
+    transform: none;
+    z-index: 100;
+}
+/* Asegurar que el icono se vea */
+.expanded-state .expand-trigger i { display: block; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5)); } 
+
+/* Contenedor Principal Animado */
+#player {
+    position: relative;
+    /* ANIMACIÓN MÁS RÁPIDA (0.7s -> 0.5s) */
+    transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ESTADO 1: BURBUJA (Glassmorphism Original) */
+.mode-bubble { 
+    width: 150px; height: 150px; 
+    border-radius: 50%; 
+    cursor: pointer;
+    background: rgba(224, 242, 254, 0.45); 
+    backdrop-filter: blur(25px); 
+    -webkit-backdrop-filter: blur(25px); 
+    border: 1px solid rgba(255, 255, 255, 0.6); 
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); 
+}
+
+/* ESTADO 2: EXPANDIDO (Marco Temático Cinnamoroll) */
+.mode-expanded { width: 780px; height: 273px; 
+    border-radius: 0; 
+    cursor: default;
+    background: rgba(224, 242, 254, 0); /* Usamos RGBA con alpha 0 para transición suave de color */
+    
+    /* FIX: Explicit transition values to avoid white flashes */
+    backdrop-filter: blur(0px);
+    -webkit-backdrop-filter: blur(0px);
+    border: 1px solid rgba(255, 255, 255, 0); /* Transition border color/alpha */
+    box-shadow: 0 0 0 0 transparent;
+
+    filter: drop-shadow(0 10px 20px rgba(0,0,0,0.2));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Nuevo Elemento de Fondo para el Marco (Fade Transition) */
+.player-expanded-bg {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-image: url('imagenes/reproductor_tema.png');
+    background-size: 100% 100%; 
+    background-repeat: no-repeat;
+    background-position: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease; /* Desaparece un poco más lento */
+    z-index: 1; /* Detrás del contenido interactivo */
+    border-radius: inherit;
+}
+
+.mode-expanded .player-expanded-bg {
+    opacity: 1;
+    transition: opacity 0.5s ease; /* Aparece suave al abrir */
+}
+
+/* Capas de contenido */
+.album-container { 
+    position: absolute; 
+    /* FIX ANIMACION: Centrado absoluto con tamaño fijo para evitar distorsión ovalada al expandir */
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 150px; height: 150px;
+    
+    /* ANIMACIÓN MÁS RÁPIDA (0.3s -> 0.2s) */
+    transition: opacity 0.2s ease; 
+    opacity: 1; pointer-events: auto;
+    z-index: 5;
+}
+.mode-expanded .album-container { opacity: 0; pointer-events: none; }
+
+.album-inner { 
+    width: 100%; height: 100%; border-radius: 50%; overflow: hidden; 
+    position: relative; box-shadow: 0 15px 30px rgba(0,0,0,0.3); z-index: 5; 
+}
+.marco { position: absolute; pointer-events: none; transition: opacity .3s; }
+#marco-img { inset: 0; width: 100%; height: 100%; object-fit: contain; z-index: 20; }
+#m-e1, #m-e2 { object-fit: fill; opacity: 0; top: 50%; left: 50%; position: absolute; }
+#m-e1 { z-index: 21; } #m-e2 { z-index: 22; }
+
+#album-img { transition: filter .3s; width: 100%; height: 100%; object-fit: cover; }
+.mode-bubble:hover #album-img { filter: brightness(0.85); }
+
+.b-play { 
+    position: absolute; inset: 0; margin: auto; opacity: 0; transition: .3s; z-index: 40; 
+    display: flex; align-items: center; justify-content: center; color: rgba(3,105,161,0.85); 
+    filter: drop-shadow(0 2px 4px rgba(255,255,255,0.8)); pointer-events: auto; /* ENABLE CLICK */
+}
+.mode-bubble:hover .b-play { opacity: 1; }
+@keyframes spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+.spinning { animation: spin 25s linear infinite; }
+
+
+/* --- Contenido Expandido (Dentro del Marco) --- */
+.expanded-content-wrapper {
+    position: absolute;
+    width: 100%; height: 100%;
+    opacity: 0; pointer-events: none; 
+    /* ANIMACIÓN MÁS RÁPIDA (0.15s -> 0.1s) */
+    transition: opacity 0.1s ease;
+    z-index: 10;
+}
+.mode-expanded .expanded-content-wrapper { 
+    opacity: 1; pointer-events: auto; 
+    /* Delay al abrir para esperar que el marco crezca */
+    transition: opacity 0.4s 0.1s ease; 
+}
+
+/* Posicionamiento de la portada en el circulo del marco */
+.frame-album-art { top: 120px; left: 137px; width: 142px; height: 142px; 
+    position: absolute;
+    border-radius: 50%;
+    object-fit: cover;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.2); 
+    z-index: 10;
+}
+
+/* Área de controles rectangular a la derecha */
+.frame-controls-area { top: 109px; left: 284px; width: 301px; 
+    position: absolute;
+    height: 110px;
+    /* FLEX por defecto, pero se sobrescribe en Modo Calibración */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0 20px;
+    z-index: 10;
+}
+
+/* --- NUEVOS ESTILOS DE POSICIONAMIENTO INDIVIDUAL --- */
+#track-title { position: absolute; top: 7px; left: 0px; width: 216px; 
+    text-align: left;
+}
+.bar-progress-wrapper { position: absolute; top: 58px; left: 13px; width: 100%; margin-bottom: 0; }
+#prev-btn { position: absolute; top: 91px; left: 110px; }
+#p-main { position: absolute; top: 78px; left: 146px; }
+#next-btn { position: absolute; top: 91px; left: 204px; }
+#dir-btn { position: absolute; top: 91px; left: 282px; z-index: 50; }
+
+/* --- ESTILOS DE CALIBRACIÓN (Cuando se usa la herramienta) --- */
+/* Cuando activamos el modo calibración, forzamos posición absoluta en los hijos para moverlos libremente */
+.calibration-mode .frame-controls-area {
+    display: block !important; /* Desactivar flex */
+    border: 1px dashed rgba(255, 255, 0, 0.5); /* Guía del contenedor */
+}
+
+/* Aplicar estilos rojos llamativos a los elementos interactivos */
+.calibration-mode #track-title,
+.calibration-mode .bar-progress-wrapper,
+.calibration-mode #prev-btn,
+.calibration-mode #p-main,
+.calibration-mode #next-btn,
+.calibration-mode #dir-btn,
+.calibration-mode .expand-trigger,
+.calibration-mode #movable-sticker,
+.calibration-mode #letter-frame {
+    position: absolute; /* Permitir movimiento libre */
+    background: rgba(255, 0, 0, 0.3) !important;
+    outline: 2px solid red !important;
+    z-index: 200;
+}
+
+/* Estilos normales de los controles */
+.bar-title {
+    /* CAMBIO: Contenedor flexible para Título y Artista */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative; 
+    /* Reset de estilos de texto heredados */
+    text-shadow: none;
+    color: inherit;
+    width: 100%;
+}
+
+#song-name {
+    color: #ffffff; /* CAMBIO: Revertido a Blanco */
+    font-weight: 600; /* CAMBIO: Revertido a peso normal */
+    font-size: 1.3em;
+    white-space: nowrap; 
+    overflow: hidden; 
+    text-overflow: ellipsis;
+    line-height: 1.1;
+    width: 100%;
+    /* Sombra añadida para garantizar legibilidad */
+    text-shadow: 0 1px 3px rgba(0,0,0,0.6); 
+}
+
+#artist-name {
+    display: none; /* CAMBIO: Autor oculto */
+}
+
+/* .bar-progress-wrapper width y position sobrescritos arriba */
+
+.bar-progress-track {
+    width: 100%; height: 8px; background: rgba(0,0,0,0.1); border-radius: 4px;
+    cursor: pointer; position: relative; overflow: hidden;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+}
+.bar-progress-fill { height: 100%; background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%); width: 0%; border-radius: 4px; transition: width 0.1s linear;}
+
+.bar-time { 
+    font-size: 11px; color: #555; font-weight: 700; 
+    display: flex; justify-content: space-between; margin-top: 3px;
+}
+
+.bar-buttons {
+    /* Mantenemos flex para que no se rompa si se quitan los estilos absolutos, 
+       pero los hijos ahora son absolutos y saldrán del flujo flex */
+    display: flex; align-items: center; justify-content: center; gap: 25px;
+    position: static;
+}
+
+/* --- ESTILO WINDOWS XP PARA BOTONES --- */
+.bar-btn-mini { 
+    color: #fff; /* Blanco */
+    cursor: pointer; 
+    transition: transform 0.2s; 
+    filter: drop-shadow(0 2px 2px rgba(0,0,0,0.8)); /* Sombra fuerte */
+    position: relative;
+    opacity: 0.9;
+}
+.bar-btn-mini:hover { transform: scale(1.15); color: #e0f2ff; opacity: 1; }
+
+.bar-play-circle {
+    width: 45px; height: 45px; 
+    /* Windows XP Style Blue Gradient */
+    background: linear-gradient(180deg, #8dc0f2 0%, #2b68c6 50%, #1e4b9e 100%);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    color: #fff; /* Icono blanco */
+    box-shadow: 
+        0 4px 6px rgba(0,0,0,0.4), 
+        inset 0 1px 2px rgba(255,255,255,0.8),
+        inset 0 -1px 2px rgba(0,0,0,0.3);
+    cursor: pointer;
+    transition: transform 0.2s, background 0.2s; 
+    border: 2px solid #fff;
+    position: relative;
+}
+.bar-play-circle:hover { 
+    transform: scale(1.1); 
+    background: linear-gradient(180deg, #a3d1ff 0%, #3a7be0 50%, #2a5bb5 100%);
+}
+
+
+/* --- ESTILOS DE LA CARTA DE BIENVENIDA --- */
+#intro-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.4); 
+    backdrop-filter: blur(4px); 
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 9999; 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+
+#intro-overlay.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+/* --- ESTILOS DEL SOBRE ANIMADO --- */
+#envelope-stage {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: opacity 0.5s ease;
+    z-index: 10001;
+}
+
+#envelope-img {
+    width: 300px;
+    max-width: 80vw;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    filter: drop-shadow(0 10px 20px rgba(0,0,0,0.3));
+    cursor: pointer;
+}
+
+.shake {
+    animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+@keyframes shake {
+    10%, 90% { transform: translate3d(-1px, 0, 0) rotate(-1deg); }
+    20%, 80% { transform: translate3d(2px, 0, 0) rotate(2deg); }
+    30%, 50%, 70% { transform: translate3d(-4px, 0, 0) rotate(-4deg); }
+    40%, 60% { transform: translate3d(4px, 0, 0) rotate(4deg); }
+}
+
+.hidden-stage {
+    display: none !important;
+    opacity: 0;
+}
+
+.letter-container {
+    background: #fdfbf7; 
+    width: 90%;
+    /* CAMBIO: ANCHO AUMENTADO A 756px COMO SOLICITADO */
+    max-width: 756px; 
+    min-height: 60vh;
+    padding: 0; 
+    border-radius: 5px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3); 
+    text-align: left;
+    position: relative;
+    border: 1px solid #e0e0e0;
+    background-image: linear-gradient(#fdfbf7 23px, #e0e0e0 24px); 
+    background-size: 100% 24px;
+    line-height: 24px;
+    font-family: 'Georgia', serif; 
+    color: #444;
+    /* CAMBIO: OVERFLOW VISIBLE para permitir que el marco sobresalga */
+    overflow: visible !important;
+    max-height: 90vh;
+    cursor: default; 
+    transition: transform 0.2s ease, opacity 0.8s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.letter-container:hover {
+    transform: scale(1.01);
+    box-shadow: 0 12px 35px rgba(0,0,0,0.4);
+}
+
+/* Nuevo Wrapper para el scroll del texto */
+.letter-scroll-wrapper {
+    width: 100%;
+    height: 100%;
+    /* Scroll automático */
+    overflow-y: auto;
+    /* CAMBIO: Padding aumentado para separar texto del borde del marco más ancho */
+    padding: 60px 80px; 
+    position: relative;
+    z-index: 10; 
+    
+    /* CAMBIO: ESTILOS DE SCROLLBAR SUTILES (Firefox) */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0,0,0,0.1) transparent;
+}
+
+/* CAMBIO: ESTILOS DE SCROLLBAR SUTILES (Webkit/Chrome/Safari) */
+.letter-scroll-wrapper::-webkit-scrollbar {
+    width: 6px;
+}
+.letter-scroll-wrapper::-webkit-scrollbar-track {
+    background: transparent;
+}
+.letter-scroll-wrapper::-webkit-scrollbar-thumb {
+    background-color: rgba(0,0,0,0.1);
+    border-radius: 20px;
+}
+.letter-scroll-wrapper::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(0,0,0,0.2);
+}
+
+/* Marco de la Carta */
+#letter-frame {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none; 
+    z-index: 50; 
+    /* CAMBIO: FILL para "sacrificar calidad" (estirar) en vez de recortar */
+    object-fit: fill; 
+}
+
+.letter-content {
+    font-size: 1.1em;
+    margin-bottom: 10px;
+    background: rgba(253, 251, 247, 0.85); 
+    white-space: pre-line; 
+}
+
+.letter-content p {
+    margin-top: 0;
+    margin-bottom: 12px; 
+}
+
+/* --- Botón para abrir la carta --- */
+#open-letter-btn {
+    width: 90px;
+    height: 90px;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    align-self: center; 
+    z-index: 10;
+    padding: 0;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    cursor: pointer;
+    margin: 0;
+}
+
+#open-letter-btn img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); 
+}
+
+#open-letter-btn:hover {
+    transform: scale(1.15) rotate(5deg);
+}
+
+/* --- 2. Partículas de Fondo --- */
+#particles-container {
+    position: fixed; 
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: -1; 
+    overflow: hidden;
+}
+.particle {
+    position: absolute;
+    background: rgba(173, 216, 230, 0.8); 
+    border-radius: 50%;
+    animation: float var(--duration) infinite ease-in-out;
+}
+@keyframes float {
+    0% { transform: translate(0, 0); opacity: 0.8; }
+    50% { transform: translate(var(--translateX), var(--translateY)); opacity: 0.5; }
+    100% { transform: translate(0, 0); opacity: 0.8; }
+}
+
+/* --- 3. Bloque Superior y Contadores --- */
+.bloque-superior {
+    display: block; 
+    width: 100%;
+    margin: 0; 
+    padding: 20px 0 0 0; 
+}
+
+.rectangulo-izquierdo {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 50px; 
+    padding: 20px 0;
+}
+
+.time-counter-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 1.2em;
+    color: var(--color-texto-claro);
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 8px;
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    width: 33.33%;
+}
+
+.time-counter-box > span:first-child {
+    font-weight: bold; 
+    color: var(--color-texto-claro);
+}
+
+.time-counter-box > span:nth-child(2) {
+    font-size: 1.5em; 
+    color: var(--color-texto-claro); 
+    font-weight: 900;
+}
+
+.time-counter-box > div {
+    font-size: 0.8em;
+    font-weight: normal;
+    margin-top: 5px;
+    color: #ccc; 
+}
+
+/* --- 4. Carrusel, Calendario y Juego --- */
+.carousel-wrapper-flex {
+    /* Grid de 3 columnas para centrado perfecto */
+    display: grid;
+    grid-template-columns: 1fr minmax(500px, 1600px) 1fr;
+    
+    /* CAMBIO: Alineación SUPERIOR (flex-start) para igualar bordes de arriba */
+    align-items: flex-start; 
+    
+    gap: 20px;
+    margin-top: 20px;
+    width: 85%; 
+    max-width: 1800px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Alineación de los elementos laterales dentro de la grilla */
+#open-letter-btn {
+    justify-self: center; /* Centrar en su columna */
+}
+
+.calendar-game-block {
+    justify-self: center; /* Centrar en su columna */
+}
+
+.carousel-center-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+.carousel-container {
+    width: 100%; 
+    height: 340px;
+    position: relative;
+    /* Usamos el container como el "marco" fijo */
+    background: rgba(0, 0, 0, 0.25); 
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    border-radius: 12px; 
+    padding: 10px; 
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    /* Importante para ocultar slides inactivos */
+    overflow: hidden; 
+}
+
+/* CAPA DE FONDO DEL CARRUSEL (PERSONALIZABLE) */
+.carousel-bg-layer {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-size: cover;
+    background-position: center;
+    border-radius: inherit; /* Hereda bordes redondeados del contenedor */
+    z-index: 0;
+    opacity: 0; /* Oculto por defecto */
+    transition: opacity 0.5s ease;
+    pointer-events: none; /* No bloquear clics */
+}
+.carousel-bg-layer.active {
+    opacity: 1;
+}
+
+/* NUEVA ESTRUCTURA DE SLIDES ENCAPSULADOS */
+.slide-group {
+    /* Posicionamiento absoluto para que todos ocupen el mismo lugar */
+    position: absolute;
+    top: 10px; /* Igual al padding del container */
+    left: 10px; /* Igual al padding del container */
+    /* Restamos el padding para el ancho exacto */
+    width: calc(100% - 20px); 
+    height: calc(100% - 20px);
+    
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px; /* Espacio entre las 2 fotos */
+    
+    /* Estado inicial: oculto y desplazado ligeramente */
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.95);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+    z-index: 2; /* Subir z-index por encima de la capa de fondo */
+}
+
+.slide-group.active {
+    opacity: 1;
+    pointer-events: auto;
+    transform: scale(1);
+    z-index: 3;
+}
+
+.slide-group img {
+    /* Cada foto ocupa casi el 50% */
+    width: 48%; 
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.carousel-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 2em;
+    color: var(--color-texto-claro);
+    background: rgba(0,0,0,0.2);
+    width: 30px;
+    height: 40px;
+    line-height: 35px;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.4s ease, background 0.3s ease, transform 0.2s ease;
+    user-select: none;
+    z-index: 10; /* Subir z-index */
+    border-radius: 8px;
+    font-weight: bold;
+    /* Flex para centrar el icono */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.carousel-arrow-left { left: 10px; }
+.carousel-arrow-right { right: 10px; }
+.carousel-container:hover .carousel-arrow { opacity: 1; }
+.carousel-arrow:hover {
+    background: rgba(70, 130, 180, 0.7); 
+    color: var(--color-texto-claro);
+    transform: translateY(-50%) scale(1.1);
+}
+.carousel-arrow:active {
+    transform: translateY(-50%) scale(0.95);
+}
+
+.calendar-game-block {
+    display: flex;
+    flex-direction: row;
+    gap: 15px;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+#game-icon-image {
+    width: 80px; height: 80px;
+    background: none;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    transition: transform 0.3s ease;
+    display: block;
+}
+#game-icon-image img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+}
+#game-icon-image:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+}
+
+/* --- ESTILOS DE CALENDARIO MEJORADOS (Glassmorphism) --- */
+.extra-box {
+    width: 300px; 
+    /* AJUSTE: Altura igualada a la del carrusel */
+    height: 340px; 
+    
+    /* CAMBIO: Fondo Vidrio un poco más claro que antes (0.5) */
+    background: rgba(0, 0, 0, 0.5); 
+    backdrop-filter: blur(10px); 
+    -webkit-backdrop-filter: blur(10px);
+    
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    
+    display: flex; 
+    flex-direction: column;
+    align-items: center; 
+    justify-content: flex-start;
+    padding: 10px; 
+    text-align: center;
+    
+    /* CAMBIO: Texto claro por defecto */
+    color: var(--color-texto-claro);
+    
+    /* Add explicit positioning for child layers */
+    position: relative; 
+    overflow: hidden;
+}
+
+/* Add to CSS: Calendar Background Layer */
+.calendar-bg-layer {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-size: cover;
+    background-position: center;
+    z-index: 0; /* Behind content */
+    opacity: 0; /* Hidden by default */
+    transition: opacity 0.5s ease, filter 0.1s linear; /* Updated transition */
+    pointer-events: none;
+    filter: opacity(1) blur(0px); /* Default filter */
+}
+.calendar-bg-layer.active {
+    opacity: 1;
+}
+
+/* Ensure content sits on top */
+.calendar-header, .calendar-grid {
+    position: relative;
+    z-index: 2;
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    align-items: center;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+.calendar-header button {
+    background: none;
+    border: none;
+    color: var(--color-texto-claro); /* Texto claro en botones */
+    font-size: 1.2em;
+    padding: 5px 8px;
+    border-radius: 6px;
+    font-weight: bold;
+    transition: background 0.2s, color 0.2s;
+    cursor: pointer;
+}
+.calendar-header button:hover { 
+    background: rgba(255, 255, 255, 0.2); 
+    color: #fff; 
+}
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+    width: 100%;
+    font-size: 0.9em;
+    justify-items: center; /* Centrar items horizontalmente */
+}
+.calendar-grid div {
+    /* CAMBIO A BLOQUES RECTANGULARES SUAVES */
+    width: 100%; /* Llenar la celda */
+    height: 35px; /* Altura fija para uniformidad */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 6px; /* Esquinas suavemente redondeadas */
+    transition: all 0.3s ease;
+    user-select: none;
+    color: var(--color-texto-claro); 
+    padding: 0; 
+}
+/* Días de la semana (Lun, Mar...) más tenues */
+.calendar-grid div:nth-child(-n+7) {
+    color: rgba(255, 255, 255, 0.6); 
+    font-weight: normal;
+    font-size: 0.85em;
+    cursor: default;
+    height: 25px; /* Header un poco más bajo */
+}
+.calendar-grid div:not(:nth-child(-n+7)):hover { 
+    background: rgba(255, 255, 255, 0.15);
+    transform: scale(1.05);
+}
+
+/* Día ACTUAL resaltado */
+.calendar-grid .today { 
+    background: rgba(255, 255, 255, 0.1); 
+    color: #fff; 
+    font-weight: bold; 
+    border: 1px solid rgba(255, 255, 255, 0.6); 
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.2); 
+}
+
+/* Días ESPECIALES resaltados (Azul Suave Elegante) */
+.calendar-grid .special-day { 
+    /* Fondo azulado semitransparente que combina con el tema */
+    background: rgba(70, 130, 180, 0.6); 
+    color: white; 
+    font-weight: bold; 
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); 
+    transform: scale(1.05);
+}
+
+/* Indicadores como RAYAS centradas */
+.carousel-indicators {
+    display: flex;
+    justify-content: center;
+    gap: 15px; 
+    margin: 15px auto 0 auto; 
+    width: fit-content; 
+    max-width: 100%;
+    position: relative; 
+    z-index: 10; /* Subir z-index */
+    padding: 0;
+}
+.carousel-indicators div {
+    width: 120px; 
+    height: 6px; 
+    background: rgba(255,255,255,0.4);
+    transition: all 0.3s ease;
+    border-radius: 4px; 
+    cursor: pointer;
+}
+.carousel-indicators div:hover { 
+    transform: scaleY(1.2); 
+    background: rgba(255,255,255,0.6);
+}
+.carousel-indicators .active { 
+    background: #fff; 
+    transform: scaleY(1.2);
+    box-shadow: 0 0 8px rgba(255,255,255,0.5);
+}
+
+#narrative-intro {
+    max-width: 900px;
+    margin: 40px auto 20px auto;
+    padding: 20px;
+    color: var(--color-texto-claro);
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 8px;
+    font-size: 1.1em;
+    line-height: 1.6;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+}
+
+/* --- 5. Tarjetas (Pasado vs Presente) --- */
+.cards-container {
+    display: flex; 
+    justify-content: center;
+    align-items: flex-start;
+    gap: 40px; 
+    max-width: 1600px;
+    width: 75%; 
+    margin-top: 40px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-bottom: 20px;
+    position: relative;
+}
+
+/* CAMBIO: Estilos de fondo para los bloques de timeline */
+.timeline-column {
+    flex: 1; 
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* Fondo semitransparente estilo intro */
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 12px;
+    padding: 30px 20px; /* Espaciado interno generoso */
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.column-header {
+    margin-bottom: 25px;
+    color: var(--color-texto-claro);
+    font-size: 1.8em;
+    font-family: 'Georgia', serif; 
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
+    position: relative;
+    padding-bottom: 10px;
+}
+
+.column-header::after {
+    content: '';
+    display: block;
+    width: 60px;
+    height: 3px;
+    background: #AED6F1; /* Celeste Pastel */
+    margin: 10px auto 0;
+    border-radius: 2px;
+}
+
+.polaroids-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px; 
+    width: 100%;
+}
+
+.card {
+    width: 200px;
+    height: 310px;
+    background: var(--color-texto-claro);
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    text-align: center;
+    transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.2s ease;
+    text-decoration: none !important;
+    color: inherit;
+    cursor: url('imagenes/cinnamoroll_pointer.png'), pointer !important;
+    position: relative; 
+    z-index: 10; 
+}
+.card:not(.disordered):hover {
+    transform: scale(1.05);
+    z-index: 20;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+}
+
+.card img {
+    width: 100%;
+    /* Reducir ligeramente la altura de la imagen para dar espacio al subtitulo */
+    height: 240px;
+    object-fit: cover;
+}
+
+.card .card-content {
+    padding: 10px 5px; /* Más espacio vertical */
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    justify-content: center;
+    flex: 1; /* Ocupar el espacio restante */
+}
+
+/* ESTILOS NUEVOS PARA TITULO POLAROID */
+.card h2 { 
+    margin: 0; 
+    font-size: 1em; 
+    color: #000; /* NEGRO PURO */
+    font-weight: 800; /* NEGRILLA FUERTE */
+    text-decoration: none !important;
+    line-height: 1.2;
+}
+
+/* ESTILOS NUEVOS PARA SUBTITULO POLAROID */
+.card .card-subtitle {
+    display: block;
+    font-size: 0.8em;
+    color: #666; /* GRIS */
+    font-weight: 400; /* DELGADO */
+    margin-top: 2px;
+}
+
+/* --- 6. Modales --- */
+.modal {
+    display: flex;
+    opacity: 0;
+    visibility: hidden; 
+    pointer-events: none;
+    position: fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    background: rgba(0,0,0,0.5);
+    justify-content: center;
+    align-items: center;
+    z-index: 2000; 
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+.modal.show { opacity: 1; visibility: visible; pointer-events: auto; }
+
+.modal-content {
+    display: flex;
+    flex-direction: row;
+    width: 90%;
+    max-width: 900px;
+    height: 400px;
+    background: var(--color-texto-claro);
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    position: relative;
+    transform: scale(0.8);
+    opacity: 0;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+.modal.show .modal-content { transform: scale(1); opacity: 1; }
+
+.modal-content .song-link-wrapper {
+    width: 40%;
+    height: auto;
+    transition: transform 0.1s ease;
+    border-radius: 8px;
+    overflow: hidden;
+    display: block;
+}
+.modal-content .song-link-wrapper:hover { transform: scale(1.02); }
+.modal-content .song-link-wrapper img {
+    width: 100%; height: 100%; border-radius: 8px; object-fit: cover; display: block;
+}
+.modal-text {
+    width: 60%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 10px;
+    padding-left: 15px;
+}
+.modal-text h2 { margin: 0; font-size: 1.5em; color: var(--color-principal); }
+.modal-text p { font-size: 1em; color: var(--color-texto-oscuro); }
+.modal-text a { color: var(--color-acento); text-decoration: none; font-weight: bold; }
+.cerrar {
+    position: absolute;
+    top: 10px; right: 15px; font-size: 25px;
+}
+
+/* Modal de Edición de Cartas (Nuevo) */
+#card-edit-modal input, #card-edit-modal textarea {
+    width: 100%;
+    background: #f0f0f0;
+    border: 1px solid #ccc;
+    padding: 8px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    color: #333;
+}
+#card-edit-modal label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #555;
+    text-align: left;
+}
+
+
+/* Modal Juego Ajustado - SIN FONDO, SOLO MARCOS */
+#arcade-game-modal .modal-content-game {
+    width: auto; 
+    max-width: none; /* Dejamos que el canvas mande */
+    height: auto;
+    background: transparent; /* Fondo transparente */
+    box-shadow: none; /* Sin sombra de caja */
+    padding: 0;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative; /* Para posicionar el botón cerrar relativo a esto si se quisiera */
+    
+    /* FIX: Prevenir que el contenido se desborde al hacer zoom */
+    overflow: hidden;
+}
+
+/* Botón cerrar específico para el juego */
+.cerrar-game {
+    position: absolute;
+    top: -50px; /* Lo sacamos hacia arriba para que no estorbe */
+    right: 0;
+    color: white;
+    font-size: 40px;
+    cursor: pointer;
+    text-shadow: 0 2px 5px rgba(0,0,0,0.5);
+    z-index: 2030;
+    opacity: 0.8;
+    transition: opacity 0.3s;
+}
+.cerrar-game:hover { opacity: 1; transform: scale(1.1); }
+
+
+/* --- NUEVO LAYOUT HORIZONTAL DEL JUEGO --- */
+.game-layout {
+    display: flex;
+    flex-direction: row; /* Coloca el juego a la izquierda y el menú a la derecha */
+    align-items: center;
+    justify-content: center;
+    gap: 20px; /* Separación entre el juego y el menú */
+}
+
+/* --- CONTENEDOR DEL MARCO DE JUEGO (ESTILO INMERSIVO) --- */
+.game-wrapper {
+    position: relative;
+    /* Tamaño Responsivo Inteligente: Ancho máximo controlado */
+    width: min(1000px, 85vh, 90vw);
+    aspect-ratio: 1 / 1; 
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    
+    /* Sombra opcional para darle profundidad al "dispositivo" completo */
+    filter: drop-shadow(0 10px 30px rgba(0,0,0,0.6));
+    
+    /* Padding responsive: Aumentado a 180px - Marco de imagen más pequeño (padding reducido) */
+    padding: clamp(40px, 12%, 120px);
+}
+
+/* SUPERPOSICIÓN DEL MARCO (La imagen va encima) */
+.game-wrapper::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    
+    /* --- CONFIGURACIÓN DE IMAGEN DEL MARCO --- */
+    background-image: url('imagenes/mi_marco.jpg');
+    background-size: 100% 100%; 
+    background-repeat: no-repeat;
+    
+    pointer-events: none; /* Permite clics a través del marco */
+    z-index: 10; /* Flota encima de todo */
+}
+
+/* Canvas del juego */
+#arcade-game-canvas {
+    border: none;
+    /* Borde gris sólido AUMENTADO (70px) para más presencia "metálica" */
+    box-shadow: 0 0 0 40px #bdc3c7; 
+    
+    background-color: var(--game-bg);
+    
+    /* El canvas ocupa todo el espacio disponible dentro del padding */
+    width: 100%;
+    height: auto; 
+    
+    /* La proporción debe coincidir con GRID_W / GRID_H (35 / 27) -> 1.296 */
+    aspect-ratio: 1.296;
+    
+    /* Mantiene la proporción del juego */
+    object-fit: contain;
+    
+    position: relative;
+    z-index: 1; /* Debajo del marco de imagen */
+    top: 20px; /* Ajustte fino para centrar */
+}
+
+/* Selector de Dificultad - Estilo Celeste Glassmorphism */
+.difficulty-selector {
+    /* CAMBIO: Efecto de Vidrio (Glassmorphism) más transparente (0.25) */
+    background: rgba(179, 229, 252, 0.25); 
+    backdrop-filter: blur(12px); 
+    -webkit-backdrop-filter: blur(12px);
+    
+    padding: 40px 30px; 
+    border-radius: 0; 
+    border: 1px solid rgba(255, 255, 255, 0.4); 
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
+    
+    display: flex;
+    flex-direction: column; 
+    gap: 15px;
+    margin-bottom: 0; 
+}
+
+.difficulty-selector span {
+    color: #4682B4; 
+    font-weight: 800; /* CAMBIO: Más negrita */
+    font-size: 1.3em; 
+    display: block; 
+    margin-bottom: 15px;
+    border-bottom: 2px solid rgba(255,255,255,0.6);
+    padding-bottom: 8px;
+    width: 100%;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.diff-buttons {
+    display: flex;
+    flex-direction: column; 
+    gap: 0; 
+    width: 100%;
+}
+
+.diff-btn {
+    background: transparent; 
+    border: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3); 
+    color: #333; /* CAMBIO: Color más oscuro para visibilidad */
+    padding: 20px 15px; 
+    border-radius: 0; 
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 1.1em;
+    font-weight: 700; /* CAMBIO: Letras más negritas por defecto */
+    text-align: left; 
+    width: 100%;
+}
+
+.diff-btn:last-child {
+    border-bottom: none; 
+}
+
+.diff-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    color: #000;
+}
+
+/* CAMBIO: Al presionar/estar activo - SIN COLOR ROJO, USA AZUL MARINO OSCURO */
+.diff-btn.active {
+    background: rgba(0, 0, 0, 0.2); /* CAMBIO: Transparencia de selección más oscura */
+    color: var(--color-principal); 
+    font-weight: 900; /* CAMBIO: Peso máximo para notar la diferencia */
+    font-size: 1.3em; 
+    box-shadow: none; 
+    padding-left: 25px; 
+    border-left: 5px solid var(--color-principal); 
+}
+
+/* Controles flotantes semi-transparentes */
+#arcade-game-modal .game-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column; /* Apilar puntos y mensaje */
+    gap: 5px;
+    margin-top: 20px;
+    
+    background: var(--game-ui-bg); 
+    padding: 10px 35px;
+    border-radius: 30px;
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Responsive para pantallas pequeñas */
+@media (max-width: 900px) {
+    .game-layout {
+        flex-direction: column; 
+    }
+    .difficulty-selector {
+        flex-direction: row; 
+        align-items: center;
+        width: 100%;
+        justify-content: center;
+        padding: 15px;
+    }
+    .diff-buttons {
+        flex-direction: row;
+        gap: 15px;
+    }
+    .diff-btn {
+        border-bottom: none;
+        border-right: 1px solid rgba(255,255,255,0.3);
+        text-align: center;
+        padding: 10px;
+    }
+    .diff-btn:last-child {
+        border-right: none;
+    }
+    .diff-btn.active {
+        padding-left: 10px;
+        border-left: none;
+        border-bottom: 3px solid var(--color-principal);
+    }
+    .difficulty-selector span {
+        border-bottom: none;
+        border-right: 2px solid rgba(255,255,255,0.6);
+        padding-right: 10px;
+        margin-right: 15px;
+        width: auto;
+        padding-bottom: 0;
+        margin-bottom: 0;
+    }
+}
+
+/* --- 7. Secciones Finales --- */
+#final-message-container {
+    width: 100%; padding: 40px 20px; margin-top: 40px;
+    background: var(--color-fondo-claro); box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+}
+#final-message { max-width: 800px; margin: 0 auto; text-align: center; }
+#final-message h2 { color: var(--color-principal); font-size: 1.8em; margin-bottom: 15px; }
+#final-message p { font-size: 1.1em; color: var(--color-texto-oscuro); line-height: 1.6; }
+
+@media (max-width: 1200px) {
+    .carousel-wrapper-flex { 
+        /* Cambio a flex en móvil/tablet para apilar */
+        display: flex; 
+        flex-direction: column; 
+        align-items: center; 
+    }
+    #open-letter-btn { margin-bottom: 20px; }
+    .carousel-container { min-width: 90%; max-width: 90%; height: 300px; }
+    .calendar-game-block { margin-top: 20px; }
+    .rectangulo-izquierdo > div { flex-direction: column; align-items: center; gap: 15px; }
+    .time-counter-box { width: 80% !important; max-width: 400px; }
+    
+    /* AJUSTE PARA PANTALLAS MEDIANAS */
+    .cards-container {
+        gap: 30px; 
+        width: 90%;
+    }
+}
+@media (max-width: 768px) {
+    .carousel-container { min-width: 95%; height: 200px; }
+    /* Ajuste para que en móvil las imágenes se vean completas */
+    .slide-group img { width: 48%; }
+    .carousel-indicators div { width: 30px; height: 5px; }
+    .calendar-game-block { flex-direction: column; gap: 10px; }
+    .extra-box { width: 95vw; max-width: 300px; height: auto; }
+    
+    /* Responsividad de las Columnas de Tiempo */
+    .cards-container { 
+        flex-direction: column; 
+        gap: 30px; 
+        align-items: center;
+        width: 95%;
+    }
+    .cards-container::after {
+        display: none; 
+    }
+    .timeline-column {
+        width: 100%; 
+        padding: 0 10px;
+    }
+    .polaroids-wrapper {
+        justify-content: center; 
+    }
+
+    .card { width: 150px; height: 250px; }
+    .card img { height: 190px; }
+    .modal-content { flex-direction: column; height: auto; max-width: 95%; padding: 15px; }
+    .modal-content .song-link-wrapper, .modal-text { width: 100%; padding: 0; margin-top: 15px; }
+    #arcade-game-modal .modal-content-game { width: 95vw; height: auto; }
+    .time-counter-box { width: 95% !important; }
+    .letter-container { padding: 20px; width: 95%; }
+    .letter-content { font-size: 1em; line-height: 24px; }
+}
+
+/* --- ESTILOS DE LA HERRAMIENTA DE DISEÑO (DEV MODE) --- */
+#design-tool-btn {
+    position: fixed;
+    top: 20px; left: 20px;
+    background: #333; color: #fff;
+    padding: 10px 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 99999;
+    font-weight: bold;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    transition: transform 0.2s;
+}
+#design-tool-btn:hover { transform: scale(1.05); }
+
+#design-tool-panel {
+    position: fixed;
+    top: 70px; left: 20px;
+    width: 320px;
+    max-height: 80vh;
+    overflow-y: auto;
+    background: rgba(0,0,0,0.9);
+    color: white;
+    padding: 15px;
+    border-radius: 8px;
+    z-index: 99999;
+    font-size: 12px;
+    display: flex; flex-direction: column; gap: 10px;
+    backdrop-filter: blur(5px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+#design-tool-panel.hidden { display: none; }
+.tool-group { display: flex; flex-direction: column; gap: 5px; border-bottom: 1px solid #555; padding-bottom: 10px; }
+.tool-group h4 { color: #00f2fe; margin: 0; font-weight: bold; font-size: 13px; display:flex; justify-content: space-between; }
+.tool-row { display: flex; justify-content: space-between; align-items: center; gap: 5px; }
+.tool-row label { width: 50px; color: #aaa; }
+.tool-row input[type="range"] { flex: 1; accent-color: #00f2fe; }
+.tool-row input[type="number"] { width: 50px; background: #222; border: 1px solid #444; color: #0f0; text-align: right; padding: 2px; border-radius: 4px; }
+.tool-row input[type="text"] { flex: 1; background: #222; border: 1px solid #444; color: #fff; padding: 2px 5px; border-radius: 4px; width: 100%; }
+
+#css-output { width: 100%; height: 120px; background: #111; color: #0f0; font-family: monospace; border: 1px solid #333; padding: 5px; margin-top: 10px; font-size: 10px; resize: vertical; }
+
+/* --- STICKER FLOTANTE EXTRA --- */
+#movable-sticker {
+    position: fixed;
+    top: 50px;
+    left: 50px;
+    width: 150px;
+    height: 150px;
+    z-index: 4000;
+    pointer-events: none;
+    transition: all 0.1s linear;
+}
+#movable-sticker img {
+    width: 100%;
+    height: auto;
+    display: block;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+}
+/* Visualización en modo calibración */
+.calibration-mode #movable-sticker {
+    border: 2px dashed #ff00ff;
+    background: rgba(255, 0, 255, 0.1);
+    pointer-events: auto;
+}
+</style>
+</head>
+<body>
+   <!-- HERRAMIENTA DE DISEÑO (DEV MODE) -->
+   <div id="design-tool-btn">🛠️ Ajustar Diseño</div>
+   <div id="design-tool-panel" class="hidden">
+       <p style="color: yellow; margin: 0 0 10px 0; font-size: 11px;">⚠️ Modo Diseño: Haz clic en las cartas para editar.</p>
+       
+       <!-- NUEVO GRUPO: Edición de Contenido de Cartas -->
+       <div class="tool-group">
+            <h4>Contenido (Cartas)</h4>
+            <button id="export-html-btn" style="background: #27ae60; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; width: 100%; font-size:11px;">Exportar HTML de Cartas</button>
+       </div>
+
+       <!-- NUEVO GRUPO: Ajustes de Fondo de Pagina -->
+       <div class="tool-group">
+            <h4>Fondo de Página</h4>
+            <div class="tool-row">
+                <label>Opac.</label>
+                <input type="range" id="bg-opacity" min="0" max="1" step="0.05" value="1">
+            </div>
+            <div class="tool-row">
+                <label>Satur.</label>
+                <input type="range" id="bg-saturate" min="0" max="3" step="0.1" value="1">
+            </div>
+            <div class="tool-row">
+                <label>Blur</label>
+                <input type="range" id="bg-blur" min="0" max="20" step="1" value="0">
+            </div>
+       </div>
+
+       <!-- NUEVO GRUPO: Ajustes del Carrusel -->
+       <div class="tool-group">
+            <h4>Ajustes Carrusel</h4>
+            <div class="tool-row">
+                <label>Fondo</label>
+                <input type="text" id="carousel-bg-url" placeholder="URL Imagen Fondo">
+            </div>
+            <!-- Nuevo Input de Archivo -->
+            <div class="tool-row">
+                <label>Subir</label>
+                <input type="file" id="carousel-bg-file" accept="image/*" style="width: 100%; font-size: 10px; color: #ccc;">
+            </div>
+            <div class="tool-row">
+                <label>Ancho</label>
+                <input type="range" id="carousel-width" min="50" max="100" value="100" step="1">
+            </div>
+            <div class="tool-row">
+                <label>Alto</label>
+                <input type="number" id="carousel-height" value="340" step="10">
+            </div>
+            <div class="tool-row">
+                <label>Pos X%</label>
+                <input type="range" id="carousel-bg-pos-x" min="0" max="100" value="50">
+            </div>
+            <div class="tool-row">
+                <label>Pos Y%</label>
+                <input type="range" id="carousel-bg-pos-y" min="0" max="100" value="50">
+            </div>
+       </div>
+
+       <!-- NUEVO GRUPO: Ajustes Calendario -->
+       <div class="tool-group">
+            <h4>Ajustes Calendario</h4>
+            <!-- Nuevos controles de Fondo para Calendario -->
+            <div class="tool-row">
+                <label>Fondo</label>
+                <input type="text" id="calendar-bg-url" placeholder="URL Imagen Fondo">
+            </div>
+            <div class="tool-row">
+                <label>Subir</label>
+                <input type="file" id="calendar-bg-file" accept="image/*" style="width: 100%; font-size: 10px; color: #ccc;">
+            </div>
+            <div class="tool-row">
+                <label>Opac.</label>
+                <input type="range" id="calendar-bg-opacity" min="0" max="1" step="0.05" value="1">
+            </div>
+            <div class="tool-row">
+                <label>Blur</label>
+                <input type="range" id="calendar-bg-blur" min="0" max="20" step="1" value="0">
+            </div>
+            <div class="tool-row">
+                <label>Ancho</label>
+                <input type="number" id="calendar-width" value="300" step="10">
+            </div>
+            <div class="tool-row">
+                <label>Alto</label>
+                <input type="number" id="calendar-height" value="340" step="10">
+            </div>
+       </div>
+
+       <!-- NUEVO GRUPO: Ajustes Reproductor -->
+       <div class="tool-group">
+            <h4 style="margin-bottom:5px;">Reproductor (Burbuja)</h4>
+            <div class="tool-row">
+                <label>Derecha</label>
+                <input type="range" id="player-pos-x" min="-50" max="500" value="44">
+            </div>
+            <div class="tool-row">
+                <label>Abajo</label>
+                <input type="range" id="player-pos-y" min="-50" max="500" value="44">
+            </div>
+            <div class="tool-row">
+                <label>Escala</label>
+                <input type="range" id="player-scale" min="0.2" max="1.5" step="0.05" value="0.65">
+            </div>
+            
+            <h4 style="margin-top:10px; margin-bottom:5px;">Reproductor (Expandido)</h4>
+            <div class="tool-row">
+                <label>Derecha</label>
+                <input type="range" id="player-exp-x" min="-50" max="500" value="0">
+            </div>
+            <div class="tool-row">
+                <label>Abajo</label>
+                <input type="range" id="player-exp-y" min="-50" max="500" value="30">
+            </div>
+       </div>
+
+       <textarea id="css-output" readonly style="height: 100px; display:none;"></textarea>
+   </div>
+
+   <!-- NUEVO: Capa de Fondo (Filter Layer) -->
+   <div id="page-background"></div>
+
+   <!-- CONTENEDOR PRINCIPAL DEL REPRODUCTOR -->
+   <div id="player-wrapper">
+        <div class="expand-trigger"><i data-lucide="chevron-left" class="w-6 h-6"></i></div>
+        <div id="player" class="mode-bubble">
+            <!-- Nuevo Elemento de Fondo para el Marco (Fade Transition) -->
+            <div class="player-expanded-bg"></div>
+            
+            <!-- CONTENIDO BURBUJA (Visible por defecto) -->
+            <div class="album-container">
+                <img id="marco-img" src="recursos/Marco.jpg" onerror="this.style.opacity='0'" class="marco">
+                <img id="m-e1" src="recursos/Marco2.jpg" onerror="this.style.opacity='0'" class="marco">
+                <img id="m-e2" src="recursos/Marco3.jpg" onerror="this.style.opacity='0'" class="marco">
+                <div class="album-inner"><img id="album-img" src="recursos/Cancion1.jpg" onerror="this.src='https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=400'" class="w-full h-full object-cover"></div>
+                <div class="b-play"><i data-lucide="play" id="b-i" size="54" fill="currentColor"></i></div>
+            </div>
+
+            <!-- CONTENIDO EXPANDIDO (Barra Kawaii) -->
+            <div class="expanded-content-wrapper">
+                <!-- Imagen de Portada Circular -->
+                <img id="bar-album-img" class="frame-album-art" src="recursos/Cancion1.jpg" onerror="this.src='https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=400'">
+                
+                <!-- Área de Controles -->
+                <div class="frame-controls-area">
+                    <div class="bar-title" id="track-title">
+                        <div id="song-name">Canción 1</div>
+                        <div id="artist-name">Artista</div>
+                    </div>
+                    
+                    <div class="bar-progress-wrapper">
+                         <div id="p-c" class="bar-progress-track"><div id="p-f" class="bar-progress-fill"></div></div>
+                         <div class="bar-time"><span id="cur">0:00</span><span id="dur">0:00</span></div>
+                    </div>
+
+                    <div class="bar-buttons">
+                         <div class="bar-btn-mini" id="prev-btn"><i data-lucide="skip-back" size="24" fill="currentColor"></i></div>
+                         <div class="bar-play-circle" id="p-main"><i data-lucide="play" id="p-i" size="24" fill="currentColor"></i></div>
+                         <div class="bar-btn-mini" id="next-btn"><i data-lucide="skip-forward" size="24" fill="currentColor"></i></div>
+                         <!-- New Directory Button -->
+                         <div class="bar-btn-mini" id="dir-btn"><i data-lucide="folder-open" size="20" fill="currentColor"></i></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <audio id="main-audio"></audio>
+    <!-- Hidden Input for Directory Selection (Music) -->
+    <input type="file" id="dir-input" webkitdirectory directory multiple style="display:none;">
+
+    <!-- Hidden Input for Sticker Selection (Image) -->
+    <input type="file" id="sticker-input" accept="image/*" style="display:none;">
+
+    <!-- IMAGEN EXTRA (STICKER) -->
+    <div id="movable-sticker">
+        <img src="imagenes/cinnamoroll_sticker.png" onerror="this.src='https://media.tenor.com/a6a66d6d0a0a0a0a/cinnamoroll.gif'" alt="Sticker Decorativo">
+    </div>
+
+<div id="intro-overlay" class="hidden">
+    <!-- Envelope Stage (Visible Initially) -->
+    <div id="envelope-stage" class="interactable">
+        <img id="envelope-img" src="imagenes/sobre_cerrado.png" onerror="this.src='https://images.unsplash.com/photo-1555447405-058428d1deef?q=80&w=300'" alt="Sobre">
+    </div>
+
+    <!-- Letter Stage (Initially Hidden) -->
+    <div id="letter-stage" class="letter-container interactable hidden-stage">
+        <!-- FRAME IMAGE ABSOLUTE -->
+        <img id="letter-frame" src="imagenes/marco_carta.png" onerror="this.src='https://www.freeiconspng.com/thumbs/border-png/gold-border-png-2.png'" alt="Marco Carta">
+        
+        <!-- SCROLL WRAPPER -->
+        <div class="letter-scroll-wrapper">
+            <div class="letter-content">
+                <p>Pensé y pensé, cada día más decepcionado por mi falta de creatividad, por la imposibilidad de representar aquello que siento, queriendo demostrar lo que llevo en el corazon (una metáfora bonita, aunque quizás algo tonta, el cerebro se encarga de eso no?). Tal vez es absurdo, no porque mi amor lo sea, sino porque resulta realmente complejo demostrar algo que ni yo mismo entiendo... algo que aun no tiene un final, ni una definición clara.</p>
+                <p>No comprendo del todo lo que significa amar, tal vez soy demasiado ingenuo como para decir que amo algo, pero si comprendo las sensaciones, se que esta manera de sobre pensar las cosas, de querer mejorar, de intentar enseñarte lo mucho que te quiero y lo que valgo, no puede ser malo. Aun asi, no entiendo lo que ocurre, no entiendo como se genera el cariño, ni por que me resulta tan difícil soltarte o intentar olvidarte...</p>
+                <p>Supongo que ahora formas parte de mi, de cada situación, de cada momento, de cada mínima accion o decisión... todo, de alguna manera, me lleva a ti, supongo que eso es lo que entiendo del "amor".</p>
+                <p>No quiero tener miedo de amar, no quiero callar lo que siento cuando lo siento, quiero dar todo de mi, mi confusion, mi seguridad, mi alegria, mi tristeza y también mi enojo. No para influir en ti, sino para demostrarme a mí que, aun mostrándome vulnerable, esto tiene sentido.</p>
+                <p style="text-align: right; font-weight: bold; margin-top: 20px;">Te amo, Keyla.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="particles-container"></div> 
+
+<div class="main-content-wrapper">
+
+    <div class="bloque-superior">
+        <div class="rectangulo-izquierdo">
+            <div style="display: flex; justify-content: center; align-items: flex-start; width: 100%; gap: 15px;">
+                <div id="time-since-met" class="time-counter-box" data-label="Nos conocimos hace:" style="text-align: center;">
+                    <p style="color: #ccc;">Calculando...</p>
+                </div>
+                <div id="time-we-met-irl" class="time-counter-box" data-label="Nos vimos hace:" style="text-align: center;">
+                     <p style="color: #ccc;">Calculando...</p>
+                </div>
+                <div id="time-together" class="time-counter-box" data-label="Estamos juntos desde:" style="text-align: center;">
+                     <p style="color: #ccc;">Calculando...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+    <div class="carousel-wrapper-flex">
+        
+        <button id="open-letter-btn" class="interactable">
+            <img src="imagenes/icono_carta.png" alt="Abrir carta">
+        </button>
+
+        <div class="carousel-center-block">
+            <div class="carousel-container draggable" id="carousel-main-box">
+                <!-- NUEVO: Capa de fondo del carrusel -->
+                <div id="carousel-bg-layer" class="carousel-bg-layer"></div>
+
+                <!-- 
+                     NUEVA ESTRUCTURA DEL CARRUSEL 
+                     Cada 'slide-group' contiene exactamente 2 fotos.
+                     Están encapsulados, uno encima del otro.
+                -->
+                
+                <!-- Slide 1 (Activo por defecto) -->
+                <div class="slide-group active">
+                    <img src="imagenes/foto1.jpg" alt="Foto 1" loading="lazy">
+                    <img src="imagenes/foto2.jpg" alt="Foto 2" loading="lazy">
+                </div>
+
+                <!-- Slide 2 -->
+                <div class="slide-group">
+                    <img src="imagenes/foto3.jpg" alt="Foto 3" loading="lazy">
+                    <img src="imagenes/foto4.jpg" alt="Foto 4" loading="lazy">
+                </div>
+
+                <!-- Slide 3 -->
+                <div class="slide-group">
+                    <img src="imagenes/foto5.jpg" alt="Foto 5" loading="lazy">
+                    <img src="imagenes/foto6.jpg" alt="Foto 6" loading="lazy">
+                </div>
+                
+                <div class="carousel-arrow carousel-arrow-left interactable">
+                    <i data-lucide="chevron-left"></i>
+                </div>
+                <div class="carousel-arrow carousel-arrow-right interactable">
+                    <i data-lucide="chevron-right"></i>
+                </div>
+            </div>
+            
+            <div class="carousel-indicators"></div>
+        </div>
+
+        <div class="calendar-game-block">
+            <div class="extra-box" id="calendar-box">
+                <!-- NEW LAYER FOR CALENDAR BACKGROUND -->
+                <div id="calendar-bg-layer" class="calendar-bg-layer"></div>
+                
+                <div class="calendar-header">
+                    <button id="prev-month" class="interactable"><</button>
+                    <span id="month-year"></span>
+                    <button id="next-month" class="interactable">></button>
+                </div>
+                <div class="calendar-grid" id="calendar-grid"></div>
+            </div>
+            <a id="game-icon-image" href="#" class="open-game-modal-btn interactable">
+                <img src="imagenes/icono_juego.png" alt="Icono de Juego">
+            </a>
+        </div>
+        
+    </div>
+
+    <div id="narrative-intro">
+        Escuché que el ser humano puede "atesorar" momentos o revivirlos a través de olores y sonidos, gracias a una conexión con nuestro sistema límbico, creando un "viaje" sensorial vivido. Contigo me ocurre de ambas formas, pero no puedo "guardar" un olor... lastimosamente, pero sí puedo explicarte aquello que me hace sentir o recordar estas canciones.
+    </div>
+
+    <div class="cards-container">
+        
+        <!-- COLUMNA IZQUIERDA: EL PASADO -->
+        <div class="timeline-column left">
+            <h3 class="column-header">Pasado Pisado</h3>
+            <div class="polaroids-wrapper">
+                
+                <div class="card interactable" data-title="Arruinarlo Todo" data-subtitle="Molinette Cinema" data-desc="" data-link="https://open.spotify.com/intl-es/track/76ej7aOQU1tfdzkE3xQ6HS?si=bb9afe9ea9d04066">
+                  <img src="imagenes/ArruinarloTodo.jpg" alt="Verte Así" loading="lazy">
+                  <div class="card-content">
+                    <h2>Arruinarlo Todo</h2>
+                    <span class="card-subtitle">Molinette Cinema</span>
+                  </div>
+                </div>
+          
+                <div class="card interactable" data-title="Chica Acuario" data-subtitle="Axel Fiks" data-desc="" data-link="https://open.spotify.com/intl-es/track/5c9B03lTeTYbOVgtPS6Tj2?si=21d598990bbd43d5">
+                  <img src="imagenes/ChicaAcuario.jpg" alt="Chica Acuario" loading="lazy">
+                  <div class="card-content">
+                    <h2>Chica Acuario</h2>
+                    <span class="card-subtitle">Axel Fiks</span>
+                  </div>
+                </div>
+          
+                <div class="card interactable" data-title="Ojitos de Md" data-subtitle="Axel Fiks" data-desc="" data-link="https://open.spotify.com/intl-es/track/0Pkc9prDMNlz3WhP9MkwMx?si=810920801f664964">
+                  <img src="imagenes/OjitosdeMd.jpg" alt="Ojitos de Md" loading="lazy">
+                  <div class="card-content">
+                    <h2>Ojitos de Md</h2>
+                    <span class="card-subtitle">Axel Fiks</span>
+                  </div>
+                </div>
+          
+                <div class="card interactable" data-title="Compañera" data-subtitle="Axel Fiks" data-desc="" data-link="https://open.spotify.com/intl-es/track/3bkpWGpt6Ck6cd7SRFK4bj?si=48cb9a12c23748b8">
+                  <img src="imagenes/Compañera.jpg" alt="Compañera" loading="lazy">
+                  <div class="card-content">
+                    <h2>Compañera</h2>
+                    <span class="card-subtitle">Axel Fiks</span>
+                  </div>
+                </div>
+          
+                <div class="card interactable" data-title="Niño Amor" data-subtitle="Axel Fiks" data-desc="" data-link="https://open.spotify.com/intl-es/track/1AXD4Qm1FDkXpqGRQzo9Oa?si=698f4bb06b324639">
+                  <img src="imagenes/NiñoAmor.jpg" alt="Niño Amor" loading="lazy">
+                  <div class="card-content">
+                    <h2>Niño Amor</h2>
+                    <span class="card-subtitle">Axel Fiks</span>
+                  </div>
+                </div>
+          
+                <div class="card interactable" data-title="O Pato" data-subtitle="Ebony Loren" data-desc="" data-link="https://open.spotify.com/intl-es/track/2FF003rfmlKnWH7nBbJimw?si=c68cc602850b4a1e">
+                  <img src="imagenes/OPato.jpg" alt="O Pato" loading="lazy">
+                  <div class="card-content">
+                    <h2>O Pato</h2>
+                    <span class="card-subtitle">Ebony Loren</span>
+                  </div>
+                </div>
+
+                <!-- Generic Pasado Items -->
+                <div class="card interactable" data-title="Hard to Say Goodbye" data-subtitle="Johnny Stimson" data-desc="" data-link="https://open.spotify.com/intl-es/track/4NasktR5Hj5df1iJC6ioJt?si=5cf72a63e2404b09">
+                  <img src="imagenes/HardtoSayGoodbye.jpg" alt="Pasado 7" loading="lazy">
+                  <div class="card-content">
+                    <h2>Hard to Say Goodbye</h2>
+                    <span class="card-subtitle">Johnny Stimson</span>
+                  </div>
+                </div>
+                <div class="card interactable" data-title="PONPONPON" data-subtitle="Kyary Pamyu Pamyu" data-desc="" data-link="https://open.spotify.com/intl-es/track/1c6C2wg7PRbPBRRUaEvheC?si=e6f5c0a28e924472">
+                  <img src="imagenes/PONPONPON.jpg" alt="Pasado 8" loading="lazy">
+                  <div class="card-content">
+                    <h2>PONPONPON</h2>
+                    <span class="card-subtitle">Kyary Pamyu Pamyu</span>
+                  </div>
+                </div>
+                
+                <!-- NUEVOS ITEMS PASADO (3) -->
+                <div class="card interactable" data-title="Café de Tarde" data-subtitle="Recuerdo" data-desc="Tardes que se sienten como eternidades." data-link="#">
+                  <img src="imagenes/extra1.jpg" onerror="this.src='https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&w=400'" alt="Extra 1" loading="lazy">
+                  <div class="card-content">
+                    <h2>Café de Tarde</h2>
+                    <span class="card-subtitle">Recuerdo</span>
+                  </div>
+                </div>
+                <div class="card interactable" data-title="Caminata" data-subtitle="Inolvidable" data-desc="Caminos que recorrimos juntos." data-link="#">
+                  <img src="imagenes/extra2.jpg" onerror="this.src='https://images.unsplash.com/photo-1470240731273-7821a6eeb6bd?q=80&w=400'" alt="Extra 2" loading="lazy">
+                  <div class="card-content">
+                    <h2>Caminata</h2>
+                    <span class="card-subtitle">Inolvidable</span>
+                  </div>
+                </div>
+                <div class="card interactable" data-title="Primera Foto" data-subtitle="Inicio" data-desc="Donde todo comenzó." data-link="#">
+                  <img src="imagenes/extra3.jpg" onerror="this.src='https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=400'" alt="Extra 3" loading="lazy">
+                  <div class="card-content">
+                    <h2>Primera Foto</h2>
+                    <span class="card-subtitle">Inicio</span>
+                  </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- COLUMNA DERECHA: EL PRESENTE -->
+        <div class="timeline-column right">
+            <h3 class="column-header">Ahoritita Mismo</h3>
+            <div class="polaroids-wrapper">
+                
+                <div class="card interactable" data-title="Algo Que Decirte" data-subtitle="AppleCats" data-desc="" data-link="https://open.spotify.com/intl-es/track/1cUrqY5xCAG0OuPDBoKnKY?si=508533ca8428490d">
+                  <img src="imagenes/AlgoQueDecirte.jpg" alt="Canción 7" loading="lazy">
+                  <div class="card-content">
+                    <h2>Algo Que Decirte</h2>
+                    <span class="card-subtitle">AppleCats</span>
+                  </div>
+                </div>
+          
+                <div class="card interactable" data-title="Love Me Not" data-subtitle="Ravyn Lenae" data-desc="" data-link="#">
+                  <img src="imagenes/LoveMeNot.jpg" alt="Canción 8" loading="lazy">
+                  <div class="card-content">
+                    <h2>Love Me Not</h2>
+                    <span class="card-subtitle">Ravyn Lenae</span>
+                  </div>
+                </div>
+                
+                <div class="card interactable" data-title="Always Forever" data-subtitle="Cults" data-desc="" data-link="https://open.spotify.com/intl-es/track/2enPRFda84VE2wtI8c86Uf?si=0785fc7419ac4073">
+                  <img src="imagenes/AlwaysForever.jpg" alt="Canción 9" loading="lazy">
+                  <div class="card-content">
+                    <h2>Always Forever</h2>
+                    <span class="card-subtitle">Cults</span>
+                  </div>
+                </div>
+          
+                <div class="card interactable" data-title="Aparato" data-subtitle="Alejandra y Maria Luna" data-desc="" data-link="https://open.spotify.com/intl-es/track/1RTn9YKzFDR6LsuLq2Ia7R?si=c068856d95394cc9">
+                  <img src="imagenes/Aparato.jpg" alt="Canción 10" loading="lazy">
+                  <div class="card-content">
+                    <h2>Aparato</h2>
+                    <span class="card-subtitle">Alejandra y Maria Luna</span>
+                  </div>
+                </div>
+          
+                <div class="card interactable" data-title="Salto" data-subtitle="El Joven Paiva" data-desc="" data-link="https://open.spotify.com/intl-es/track/24ihFGZFQ3S1ONWMKaVbTF?si=33b6025af31246f9">
+                  <img src="imagenes/Salto.jpg" alt="Canción 11" loading="lazy">
+                  <div class="card-content">
+                    <h2>Salto</h2>
+                    <span class="card-subtitle">El Joven Paiva</span>
+                  </div>
+                </div>
+          
+                <div class="card interactable" data-title="Si Tú Me Quisieras" data-subtitle="Adrián Bello" data-desc="" data-link="https://open.spotify.com/intl-es/track/6IDYKjOBK8zMyMqv2NQ9VL?si=fa0d5a9b2fa244c8">
+                  <img src="imagenes/SiTúMeQuisieras.jpg" alt="Foto Recuerdo 1" loading="lazy">
+                  <div class="card-content">
+                    <h2>Si Tú Me Quisieras</h2>
+                    <span class="card-subtitle">Adrián Bello</span>
+                  </div>
+                </div>
+                
+                <!-- Generic Presente Items -->
+                <div class="card interactable" data-title="Me Voy A Valparaíso" data-subtitle="Diego Lorenzini" data-desc="" data-link="https://open.spotify.com/intl-es/track/6IDYKjOBK8zMyMqv2NQ9VL?si=b6f94d71cbaa4eca">
+                  <img src="imagenes/MeVoyAValparaíso.jpg" alt="Foto Recuerdo 2" loading="lazy">
+                  <div class="card-content">
+                    <h2>Me Voy A Valparaíso</h2>
+                    <span class="card-subtitle">Diego Lorenzini</span>
+                  </div>
+                </div>
+                
+                <div class="card interactable" data-title="Dulcito e Coco" data-subtitle="Vicente Garcia" data-desc="" data-link="https://open.spotify.com/intl-es/track/3hQR682FLOBZg22eYjPA6L?si=865b6166a3204cee">
+                  <img src="imagenes/DulcitoeCoco.jpg" alt="Foto Recuerdo 3" loading="lazy">
+                  <div class="card-content">
+                    <h2>Dulcito e Coco</h2>
+                    <span class="card-subtitle">Vicente Garcia</span>
+                  </div>
+                </div>
+
+                <!-- NUEVOS ITEMS PRESENTE (3) -->
+                <div class="card interactable" data-title="Cena Especial" data-subtitle="Hoy" data-desc="Celebrando cada pequeño momento." data-link="#">
+                  <img src="imagenes/extra4.jpg" onerror="this.src='https://images.unsplash.com/photo-1559339352-11d035aa65de?q=80&w=400'" alt="Extra 4" loading="lazy">
+                  <div class="card-content">
+                    <h2>Cena Especial</h2>
+                    <span class="card-subtitle">Hoy</span>
+                  </div>
+                </div>
+                <div class="card interactable" data-title="Abrazo" data-subtitle="Cariño" data-desc="El lugar más seguro." data-link="#">
+                  <img src="imagenes/extra5.jpg" onerror="this.src='https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=400'" alt="Extra 5" loading="lazy">
+                  <div class="card-content">
+                    <h2>Abrazo</h2>
+                    <span class="card-subtitle">Cariño</span>
+                  </div>
+                </div>
+                <div class="card interactable" data-title="Promesa" data-subtitle="Eternidad" data-desc="Juntos hacia adelante." data-link="#">
+                  <img src="imagenes/extra6.jpg" onerror="this.src='https://images.unsplash.com/photo-1621252179027-94459d27d3ee?q=80&w=400'" alt="Extra 6" loading="lazy">
+                  <div class="card-content">
+                    <h2>Promesa</h2>
+                    <span class="card-subtitle">Eternidad</span>
+                  </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+<div id="final-message-container">
+    <div id="final-message">
+        <p>
+            Pensaba darte esto hace muchísimo tiempo, y realmente agradezco mucho que no pasó, ya que no hubiera tenido la oportunidad de incluir imágenes juntos. No obstante, antes de "conocernos", para mí esto ya era muy real: tú me tenías cautivado. Con un simple mensaje en el cual demostraras tu esencia, yo estaba enamorado. Pero tenerte a mi lado es como un sueño, tú eres increíble y quiero estar a tu lado toda mi vida para yo también ser increíble. Te admiro muchísimo y me encanta la persona que eres, y la inteligencia enorme que posees. Quizás soy "sapiofilico", me gusta cachar sapos, jaja. Te amo demasiado Keyla.
+        </p>
+    </div>
+</div>
+
+<div class="modal" id="modal">
+    <div class="modal-content">
+        <span class="cerrar interactable" id="cerrar">×</span>
+        <a id="modal-image-link" class="song-link-wrapper interactable" href="#" target="_blank">
+            <img id="modal-img" src="" alt="Imagen de la canción">
+        </a>
+        
+        <div class="modal-text">
+            <h2 id="modal-title"></h2>
+            <p id="modal-desc"></p>
+        </div>
+    </div>
+</div>
+
+<!-- NUEVO MODAL DE EDICIÓN DE CARTAS -->
+<div id="card-edit-modal" class="modal">
+    <div class="modal-content" style="flex-direction: column; height: auto; max-height: 90vh; overflow-y: auto;">
+        <span class="cerrar interactable" id="close-edit-card">×</span>
+        <h3 style="color: var(--color-principal); margin-bottom: 20px;">Editar Carta</h3>
+        
+        <label>Título (Nombre visible):
+            <input type="text" id="edit-card-title">
+        </label>
+
+        <label>Subtítulo (Artista/Fecha):
+            <input type="text" id="edit-card-subtitle">
+        </label>
+        
+        <label>Enlace (URL Spotify/Youtube):
+            <input type="text" id="edit-card-link">
+        </label>
+        
+        <label>Imagen (URL):
+            <input type="text" id="edit-card-img">
+        </label>
+        
+        <label>Descripción:
+            <textarea id="edit-card-desc" rows="3"></textarea>
+        </label>
+        
+        <button id="save-card-btn" class="interactable" style="background: var(--color-principal); color: white; padding: 10px; border-radius: 6px; border: none; margin-top: 10px; font-weight: bold;">Guardar Cambios</button>
+    </div>
+</div>
+
+<div class="modal" id="arcade-game-modal">
+    <div class="modal-content modal-content-game">
+        <span class="cerrar interactable cerrar-game" id="cerrar-game-modal">×</span>
+        
+        <div class="game-layout">
+            <!-- CONTENEDOR DEL MARCO -->
+            <div class="game-wrapper" id="game-wrapper">
+                <canvas id="arcade-game-canvas" width="700" height="540"></canvas>
+            </div>
+            
+            <!-- Selector de Dificultad - Estilo Celeste Glassmorphism -->
+            <div class="difficulty-selector">
+                <span style="color: var(--color-principal); font-weight: 800; margin-bottom: 10px;">Dificultad</span>
+                <div class="diff-buttons">
+                    <button class="diff-btn active interactable" data-speed="130">Normal</button>
+                    <button class="diff-btn interactable" data-speed="80">Difícil</button>
+                    <button class="diff-btn interactable" data-speed="50">Experto</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="game-controls">
+            <span id="score-display" style="color: var(--game-text); font-weight: bold; font-size: 1.2em;">Puntos: 0</span>
+        </div>
+    </div>
+</div>
+
+<script>
+/**
+ * APP PRINCIPAL
+ * Estructura modular mejorada para mayor cohesión y mantenibilidad.
+ */
+(function() {
+    'use strict';
+
+    // --- UTILIDADES COMPARTIDAS ---
+    const Utils = {
+        get: (id) => document.getElementById(id),
+        query: (sel) => document.querySelector(sel),
+        queryAll: (sel) => document.querySelectorAll(sel),
+        formatTime: (s) => isNaN(s) ? "0:00" : `${Math.floor(s/60)}:${Math.floor(s%60).toString().padStart(2,'0')}`,
+        toggleDisplay: (el, show) => {
+            if (!el) return;
+            if (show) {
+                el.classList.add('show');
+                if (el.id === 'arcade-game-modal') document.body.classList.add('no-scroll');
+            } else {
+                el.classList.remove('show');
+                if (el.id === 'arcade-game-modal') document.body.classList.remove('no-scroll');
+            }
+        }
+    };
+
+    // --- MÓDULO: REPRODUCTOR DE MÚSICA ---
+    const MusicPlayer = (function() {
+        const CONFIG = {
+            BUBBLE: { s: 2.08, x: -14.8, y: -4 },
+        };
+
+        let audio, playlist = [], currentIndex = 0, isPlaying = false, isExpanded = false;
+
+        // Lista Inicial
+        const INITIAL_PLAYLIST = [
+            { title: "Rentless", artist: "Untitled", file: "Musica/cancion1.mp3", img: "imagenes/cancion1.jpg" },
+            { title: "Me voy a Valparaiso", artist: "Diego Lorenzi", file: "Musica/cancion2.mp3", img: "Musica/Cancion2.jpg" }
+        ];
+
+        function init() {
+            if (!Utils.get('player')) return;
+
+            audio = Utils.get('main-audio');
+            playlist = [...INITIAL_PLAYLIST];
+
+            // Inicializar transformaciones visuales
+            const marcoImg = Utils.get('marco-img');
+            if (marcoImg) {
+                marcoImg.style.transform = `scale(${CONFIG.BUBBLE.s}) translate(${CONFIG.BUBBLE.x}px, ${CONFIG.BUBBLE.y}px)`;
+            }
+
+            setupEventListeners();
+            loadTrack(0);
+            handleAutoplay();
+
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function setupEventListeners() {
+            // Expansión
+            Utils.query('.expand-trigger').addEventListener('click', toggleExpand);
+
+            // Play/Pause
+            Utils.get('p-main').addEventListener('click', togglePlay);
+            Utils.get('b-i').parentElement.addEventListener('click', togglePlay);
+            
+            // Clic en burbuja (si no está expandido)
+            const albumInner = Utils.query('.album-inner');
+            if (albumInner) {
+                albumInner.addEventListener('click', () => { if (!isExpanded) togglePlay(); });
+            }
+
+            // Controles de Navegación
+            Utils.get('prev-btn').addEventListener('click', (e) => { e.stopPropagation(); prevTrack(); });
+            Utils.get('next-btn').addEventListener('click', (e) => { e.stopPropagation(); nextTrack(); });
+            
+            // Barra de progreso
+            Utils.get('p-c').addEventListener('click', seek);
+
+            // Importar Carpeta
+            const dirBtn = Utils.get('dir-btn');
+            const dirInput = Utils.get('dir-input');
+            if (dirBtn && dirInput) {
+                dirBtn.addEventListener('click', (e) => { e.stopPropagation(); dirInput.click(); });
+                dirInput.addEventListener('change', handleDirectorySelect);
+            }
+
+            // Eventos de Audio
+            audio.ontimeupdate = updateProgress;
+            audio.onloadedmetadata = () => Utils.get('dur').innerText = Utils.formatTime(audio.duration);
+
+            // Cerrar al hacer clic fuera
+            document.addEventListener('click', (e) => {
+                const wrapper = Utils.get('player-wrapper');
+                if (isExpanded && wrapper && !wrapper.contains(e.target)) {
+                    toggleExpand();
+                }
+            });
+        }
+
+        function handleDirectorySelect(e) {
+            const files = Array.from(e.target.files).filter(f => f.type.startsWith('audio/'));
+            if (files.length > 0) {
+                const wasEmpty = playlist.length === 0;
+                files.forEach(f => {
+                    let title = f.name.replace(/\.[^/.]+$/, "");
+                    let artist = "Desconocido";
+                    if (title.includes(" - ")) {
+                        const parts = title.split(" - ");
+                        artist = parts[0];
+                        title = parts.slice(1).join(" - ");
+                    }
+                    playlist.push({
+                        title, artist,
+                        file: URL.createObjectURL(f),
+                        img: 'imagenes/reproductor_tema.png'
+                    });
+                });
+                if (wasEmpty) loadTrack(0);
+            }
+        }
+
+        function handleAutoplay() {
+            const playPromise = audio.play();
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    isPlaying = true;
+                    updateUI();
+                }).catch(() => {
+                    console.log("Autoplay bloqueado. Esperando interacción.");
+                    const startPlay = () => {
+                        audio.play().then(() => {
+                            isPlaying = true;
+                            updateUI();
+                        });
+                        ['click', 'touchstart', 'keydown'].forEach(evt => document.removeEventListener(evt, startPlay));
+                    };
+                    ['click', 'touchstart', 'keydown'].forEach(evt => document.addEventListener(evt, startPlay));
+                });
+            }
+        }
+
+        function toggleExpand(e) {
+            if (e) e.stopPropagation();
+            isExpanded = !isExpanded;
+            
+            const player = Utils.get('player');
+            const wrapper = Utils.get('player-wrapper');
+            const trigger = Utils.query('.expand-trigger');
+
+            if (isExpanded) {
+                player.classList.remove('mode-bubble');
+                player.classList.add('mode-expanded');
+                wrapper.classList.add('expanded-state');
+                trigger.innerHTML = '<i data-lucide="x" class="w-6 h-6"></i>';
+            } else {
+                player.classList.add('mode-bubble');
+                player.classList.remove('mode-expanded');
+                wrapper.classList.remove('expanded-state');
+                player.style.width = ''; player.style.height = ''; // Limpieza estilos inline
+                trigger.innerHTML = '<i data-lucide="chevron-left" class="w-6 h-6"></i>';
+            }
+            if (window.lucide) lucide.createIcons();
+            updateUI();
+        }
+
+        function loadTrack(index) {
+            if (index < 0) index = playlist.length - 1;
+            if (index >= playlist.length) index = 0;
+            currentIndex = index;
+
+            if (playlist.length === 0) return;
+
+            const track = playlist[currentIndex];
+            audio.src = track.file;
+            
+            Utils.get('album-img').src = track.img;
+            Utils.get('bar-album-img').src = track.img;
+            Utils.get('song-name').innerText = track.title;
+            Utils.get('artist-name').innerText = track.artist || "Desconocido";
+
+            if (isPlaying) audio.play().catch(console.error);
+            updateUI();
+        }
+
+        function prevTrack() { loadTrack(currentIndex - 1); }
+        function nextTrack() { loadTrack(currentIndex + 1); }
+
+        function togglePlay(e) {
+            if (e) e.stopPropagation();
+            isPlaying ? audio.pause() : audio.play().catch(() => {});
+            isPlaying = !isPlaying;
+            updateUI();
+        }
+
+        function updateUI() {
+            const iconName = isPlaying ? 'pause' : 'play';
+            // Icono Burbuja
+            const bi = Utils.get('b-i');
+            if (bi) bi.parentElement.innerHTML = `<i data-lucide="${iconName}" id="b-i" size="54" fill="currentColor"></i>`;
+            // Icono Barra
+            const pi = Utils.get('p-i');
+            if (pi) pi.parentElement.innerHTML = `<i data-lucide="${iconName}" id="p-i" size="24" fill="currentColor"></i>`;
+            
+            Utils.get('album-img').classList.toggle('spinning', isPlaying && !isExpanded);
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function updateProgress() {
+            if (audio.duration) {
+                Utils.get('p-f').style.width = (audio.currentTime / audio.duration * 100) + '%';
+                Utils.get('cur').innerText = Utils.formatTime(audio.currentTime);
+                Utils.get('dur').innerText = Utils.formatTime(audio.duration);
+            }
+        }
+
+        function seek(e) {
+            e.stopPropagation();
+            const bar = Utils.get('p-c');
+            if (audio.duration) {
+                audio.currentTime = ((e.clientX - bar.getBoundingClientRect().left) / bar.offsetWidth) * audio.duration;
+            }
+        }
+
+        return { init };
+    })();
+
+    // --- MÓDULO: CONTADORES DE TIEMPO ---
+    const TimeCounters = (function() {
+        const DATES = {
+            together: { id: 'time-together', date: new Date('October 11, 2025 00:00:00'), label: 'Estamos juntos desde:' },
+            met: { id: 'time-since-met', date: new Date('April 29, 2021 19:00:00'), label: 'Nos conocimos hace:' },
+            metIRL: { id: 'time-we-met-irl', date: new Date('September 20, 2025 21:28:00'), label: 'Nos vimos hace:' }
+        };
+
+        function updateCounter(config) {
+            const el = Utils.get(config.id);
+            if (!el) return;
+
+            const label = el.dataset.label || config.label;
+            const diff = new Date() - config.date;
+
+            if (diff < 0) {
+                el.innerHTML = `<span style="font-weight: bold; color: var(--color-texto-claro);">${label}</span><span style="font-size: 1.5em; color: var(--color-texto-claro); font-weight: 900;">¡Falta poco!</span><div style="font-size: 0.8em; color: #ccc;">Aún no hemos llegado a esa fecha.</div>`;
+                return;
+            }
+
+            const totalSeconds = Math.floor(diff / 1000);
+            const totalMinutes = Math.floor(totalSeconds / 60);
+            const totalHours = Math.floor(totalMinutes / 60);
+            const totalDays = Math.floor(totalHours / 24);
+            const years = Math.floor(totalDays / 365.25);
+            const remainingDays = Math.floor(totalDays % 365.25);
+            
+            // Formatting detailed time
+            const hours = (totalHours % 24).toString().padStart(2, '0');
+            const minutes = (totalMinutes % 60).toString().padStart(2, '0');
+            const seconds = (totalSeconds % 60).toString().padStart(2, '0');
+
+            el.innerHTML = `<span style="font-weight: bold; color: var(--color-texto-claro);">${label}</span><span style="font-size: 1.5em; color: var(--color-texto-claro); font-weight: 900;">${years} Años, ${remainingDays} Días</span><div style="font-size: 0.8em; color: #ccc;">${hours} Horas, ${minutes} Minutos y ${seconds} Segundos</div>`;
+        }
+
+        function init() {
+            Object.values(DATES).forEach(updateCounter);
+            setInterval(() => Object.values(DATES).forEach(updateCounter), 1000);
+        }
+
+        return { init };
+    })();
+
+    // --- MÓDULO: CARRUSEL DE IMÁGENES ---
+    const ImageCarousel = (function() {
+        let index = 0, interval = null, slides = [];
+
+        function init() {
+            const container = Utils.query('.carousel-container');
+            slides = Utils.queryAll('.slide-group');
+            const indicatorsContainer = Utils.query('.carousel-indicators');
+
+            if (!container || !slides.length) return;
+
+            // Indicadores
+            indicatorsContainer.innerHTML = '';
+            slides.forEach((_, i) => {
+                const dot = document.createElement('div');
+                dot.classList.add('interactable');
+                if (i === 0) dot.classList.add('active');
+                dot.dataset.index = i;
+                indicatorsContainer.appendChild(dot);
+            });
+
+            // Eventos
+            container.addEventListener('click', (e) => {
+                if (e.target.closest('.carousel-arrow-left')) move(-1);
+                else if (e.target.closest('.carousel-arrow-right')) move(1);
+            });
+
+            indicatorsContainer.addEventListener('click', (e) => {
+                if (e.target.dataset.index) show(parseInt(e.target.dataset.index));
+            });
+
+            container.addEventListener('mouseenter', stopAuto);
+            container.addEventListener('mouseleave', startAuto);
+
+            // Touch Swipe
+            let startX = 0;
+            container.addEventListener('touchstart', e => startX = e.changedTouches[0].screenX, {passive: true});
+            container.addEventListener('touchend', e => {
+                let diff = startX - e.changedTouches[0].screenX;
+                if (diff > 50) move(1);
+                if (diff < -50) move(-1);
+            }, {passive: true});
+
+            show(0);
+            startAuto();
+        }
+
+        function move(dir) {
+            index = (index + dir + slides.length) % slides.length;
+            show(index);
+        }
+
+        function show(i) {
+            index = i;
+            slides.forEach((s, idx) => s.classList.toggle('active', idx === index));
+            
+            const dots = Utils.queryAll('.carousel-indicators div');
+            dots.forEach(d => d.classList.remove('active'));
+            if (dots[index]) dots[index].classList.add('active');
+        }
+
+        function startAuto() {
+            stopAuto();
+            interval = setInterval(() => move(1), 5000);
+        }
+
+        function stopAuto() {
+            if (interval) clearInterval(interval);
+        }
+
+        return { init };
+    })();
+
+    // --- MÓDULO: CALENDARIO ---
+    const CalendarWidget = (function() {
+        let currentMonth = new Date().getMonth();
+        let currentYear = new Date().getFullYear();
+        const today = new Date();
+        const NAMES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+        const DAYS = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+
+        function init() {
+            const box = Utils.get('calendar-box');
+            if (!box) return;
+
+            render(currentMonth, currentYear);
+
+            box.addEventListener('click', (e) => {
+                if (e.target.id === 'prev-month') changeMonth(-1);
+                if (e.target.id === 'next-month') changeMonth(1);
+            });
+        }
+
+        function changeMonth(delta) {
+            currentMonth += delta;
+            if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+            if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+            render(currentMonth, currentYear);
+        }
+
+        function render(month, year) {
+            const grid = Utils.get('calendar-grid');
+            const label = Utils.get('month-year');
+            if (!grid || !label) return;
+
+            grid.innerHTML = "";
+            DAYS.forEach(d => {
+                const div = document.createElement('div');
+                div.textContent = d;
+                grid.appendChild(div);
+            });
+
+            const firstDay = new Date(year, month, 1).getDay();
+            const lastDate = new Date(year, month + 1, 0).getDate();
+            let day = 1;
+
+            for (let i = 0; i < 42; i++) {
+                const div = document.createElement('div');
+                if (i >= firstDay && day <= lastDate) {
+                    div.textContent = day;
+                    if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+                        div.classList.add('today');
+                    }
+                    // Fechas especiales hardcoded (ejemplo)
+                    if (day === 11) { div.classList.add('special-day', 'interactable'); div.title = "Fecha Especial 1"; }
+                    if (day === 16) { div.classList.add('special-day', 'interactable'); div.title = "Fecha Especial 2"; }
+                    day++;
+                }
+                grid.appendChild(div);
+            }
+            label.textContent = `${NAMES[month]} ${year}`;
+        }
+
+        return { init };
+    })();
+
+    // --- MÓDULO: GESTOR DE MODALES Y UI ---
+    const ModalManager = (function() {
+        const modal = Utils.get('modal');
+        const arcadeModal = Utils.get('arcade-game-modal');
+
+        function init() {
+            // Eventos globales de cierre
+            document.body.addEventListener('click', (e) => {
+                if (e.target.id === 'cerrar' || e.target === modal) Utils.toggleDisplay(modal, false);
+                if (e.target.id === 'cerrar-game-modal' || e.target === arcadeModal) {
+                    Utils.toggleDisplay(arcadeModal, false);
+                    SnakeGame.stop();
+                }
+                // Abrir Juego
+                if (e.target.closest('.open-game-modal-btn')) {
+                    e.preventDefault();
+                    Utils.toggleDisplay(arcadeModal, true);
+                    setTimeout(() => SnakeGame.init(), 100);
+                }
+            });
+
+            setupCardClicks();
+        }
+
+        function setupCardClicks() {
+            const container = Utils.query('.cards-container');
+            if (!container) return;
+
+            container.addEventListener('click', (e) => {
+                const card = e.target.closest('.card');
+                if (card) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    // Delegar al editor si está en modo diseño
+                    if (document.body.classList.contains('design-mode')) {
+                        CardEditor.open(card);
+                        return;
+                    }
+
+                    // Mostrar modal de detalle
+                    Utils.get('modal-title').textContent = card.dataset.title;
+                    Utils.get('modal-desc').textContent = card.dataset.desc;
+                    
+                    const imgLink = Utils.get('modal-image-link');
+                    const modalImg = Utils.get('modal-img');
+                    const imgElement = card.querySelector('img');
+                    
+                    if (imgElement && modalImg) modalImg.src = imgElement.src;
+                    
+                    if (imgLink) {
+                        imgLink.href = card.dataset.link || '#';
+                        imgLink.style.pointerEvents = (card.dataset.link === '#') ? 'none' : 'auto';
+                        imgLink.style.display = 'block';
+                    }
+                    
+                    Utils.toggleDisplay(modal, true);
+                }
+            });
+        }
+
+        return { init };
+    })();
+
+    // --- MÓDULO: EDITOR DE CARTAS ---
+    const CardEditor = (function() {
+        const modal = Utils.get('card-edit-modal');
+        let currentCard = null;
+
+        function init() {
+            if (!modal) return;
+            
+            // Cerrar
+            document.body.addEventListener('click', (e) => {
+                if (e.target.id === 'close-edit-card' || e.target === modal) Utils.toggleDisplay(modal, false);
+            });
+
+            // Guardar
+            const saveBtn = Utils.get('save-card-btn');
+            if (saveBtn) saveBtn.addEventListener('click', saveChanges);
+        }
+
+        function open(card) {
+            currentCard = card;
+            Utils.get('edit-card-title').value = card.querySelector('h2').innerText;
+            Utils.get('edit-card-subtitle').value = card.dataset.subtitle || '';
+            Utils.get('edit-card-link').value = card.dataset.link || '';
+            Utils.get('edit-card-img').value = card.querySelector('img').src;
+            Utils.get('edit-card-desc').value = card.dataset.desc || '';
+            Utils.toggleDisplay(modal, true);
+        }
+
+        function saveChanges() {
+            if (!currentCard) return;
+            
+            const title = Utils.get('edit-card-title').value;
+            const subtitle = Utils.get('edit-card-subtitle').value;
+            const link = Utils.get('edit-card-link').value;
+            const img = Utils.get('edit-card-img').value;
+            const desc = Utils.get('edit-card-desc').value;
+
+            // Update DOM
+            currentCard.querySelector('h2').innerText = title;
+            currentCard.dataset.title = title;
+            
+            let subEl = currentCard.querySelector('.card-subtitle');
+            if (!subEl) {
+                subEl = document.createElement('span');
+                subEl.className = 'card-subtitle';
+                currentCard.querySelector('.card-content').appendChild(subEl);
+            }
+            subEl.innerText = subtitle;
+            currentCard.dataset.subtitle = subtitle;
+
+            currentCard.dataset.link = link;
+            currentCard.querySelector('img').src = img;
+            currentCard.dataset.desc = desc;
+
+            Utils.toggleDisplay(modal, false);
+        }
+
+        return { init, open };
+    })();
+
+    // --- MÓDULO: SOBRE ANIMADO ---
+    const EnvelopeAnimation = (function() {
+        const IMAGES = [
+            'imagenes/sobre_cerrado.png',
+            'imagenes/sobre_medio.png',
+            'imagenes/sobre_abierto.png'
+        ];
+        let state = 0;
+
+        function init() {
+            const overlay = Utils.get('intro-overlay');
+            const stage = Utils.get('envelope-stage');
+            const openBtn = Utils.get('open-letter-btn');
+
+            if (!overlay || !stage || !openBtn) return;
+
+            openBtn.onclick = (e) => {
+                e.stopPropagation();
+                reset();
+                overlay.classList.remove('hidden');
+            };
+
+            stage.onclick = (e) => {
+                e.stopPropagation();
+                nextState();
+            };
+
+            overlay.onclick = (e) => {
+                if (e.target === overlay) overlay.classList.add('hidden');
+            };
+        }
+
+        function reset() {
+            state = 0;
+            const stage = Utils.get('envelope-stage');
+            const letter = Utils.get('letter-stage');
+            const img = Utils.get('envelope-img');
+
+            stage.classList.remove('hidden-stage');
+            stage.style.display = 'flex'; 
+            stage.style.opacity = '1';
+
+            letter.classList.add('hidden-stage');
+            letter.style.display = 'none';
+
+            img.src = IMAGES[0];
+            img.style.transform = 'none';
+        }
+
+        function nextState() {
+            const img = Utils.get('envelope-img');
+            const stage = Utils.get('envelope-stage');
+            const letter = Utils.get('letter-stage');
+
+            img.classList.remove('shake');
+            void img.offsetWidth; // Trigger reflow
+            img.classList.add('shake');
+
+            state++;
+
+            if (state === 1) {
+                setTimeout(() => { img.src = IMAGES[1]; img.style.transform = 'rotate(-2deg) scale(1.05)'; }, 200);
+            } else if (state === 2) {
+                setTimeout(() => { img.src = IMAGES[2]; img.style.transform = 'rotate(2deg) scale(1.1)'; }, 200);
+            } else if (state === 3) {
+                stage.style.opacity = '0';
+                setTimeout(() => {
+                    stage.classList.add('hidden-stage');
+                    stage.style.display = 'none';
+                    letter.style.display = 'flex';
+                    setTimeout(() => letter.classList.remove('hidden-stage'), 50);
+                }, 300);
+            }
+        }
+
+        return { init };
+    })();
+
+    // --- MÓDULO: SISTEMA DE PARTÍCULAS ---
+    const ParticleSystem = (function() {
+        function init() {
+            const container = Utils.get('particles-container');
+            if (!container) return;
+
+            for (let i = 0; i < 30; i++) {
+                const p = document.createElement('div');
+                p.classList.add('particle');
+                const size = Math.random() * 3 + 1;
+                p.style.left = `${Math.random() * 100}%`;
+                p.style.top = `${Math.random() * 100}%`;
+                p.style.width = `${size}px`;
+                p.style.height = `${size}px`;
+                p.style.setProperty('--duration', `${Math.random() * 10 + 10}s`);
+                p.style.setProperty('--translateX', `${Math.random() * 40 - 20}px`);
+                p.style.setProperty('--translateY', `${Math.random() * 40 - 20}px`);
+                p.style.animationDelay = `${Math.random() * -20}s`;
+                container.appendChild(p);
+            }
+        }
+        return { init };
+    })();
+
+    // --- MÓDULO: JUEGO SNAKE ---
+    const SnakeGame = (function() {
+        const CONSTANTS = { TILE_SIZE: 20, GRID_W: 35, GRID_H: 27 };
+        let canvas, ctx, loopId;
+        let state = {
+            active: false,
+            gameOver: false,
+            speed: 130,
+            snake: [],
+            food: { x: 0, y: 0 },
+            dir: { x: 1, y: 0 },
+            nextDir: { x: 1, y: 0 },
+            score: 0,
+            lastTime: 0,
+            beat: 0
+        };
+
+        function init() {
+            stop();
+            canvas = Utils.get('arcade-game-canvas');
+            if (!canvas) return;
+
+            // Recrear canvas para limpiar eventos
+            const newCanvas = canvas.cloneNode(true);
+            canvas.parentNode.replaceChild(newCanvas, canvas);
+            canvas = newCanvas;
+            ctx = canvas.getContext('2d');
+
+            setupDifficulty();
+            resetState();
+            spawnFood();
+            setupControls();
+
+            Utils.get('score-display').textContent = "Puntos: 0";
+            loopId = requestAnimationFrame(gameLoop);
+        }
+
+        function resetState() {
+            state.snake = [{x: 10, y: 10}, {x: 9, y: 10}, {x: 8, y: 10}];
+            state.dir = { x: 1, y: 0 };
+            state.nextDir = { x: 1, y: 0 };
+            state.score = 0;
+            state.active = true;
+            state.gameOver = false;
+        }
+
+        function setupDifficulty() {
+            const buttons = Utils.queryAll('.diff-btn');
+            buttons.forEach(btn => {
+                btn.onclick = function() {
+                    buttons.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    state.speed = parseInt(this.dataset.speed);
+                    if (!state.active || state.gameOver) init();
+                };
+            });
+        }
+
+        function spawnFood() {
+            let valid = false;
+            while (!valid) {
+                state.food.x = Math.floor(Math.random() * CONSTANTS.GRID_W);
+                state.food.y = Math.floor(Math.random() * CONSTANTS.GRID_H);
+                valid = !state.snake.some(s => s.x === state.food.x && s.y === state.food.y);
+            }
+        }
+
+        function setupControls() {
+            // Teclado
+            window.addEventListener('keydown', handleKey);
+            
+            // Touch
+            let startX = 0, startY = 0;
+            canvas.addEventListener('touchstart', (e) => {
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+                e.preventDefault();
+                if (state.gameOver) init();
+            }, {passive: false});
+
+            canvas.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                if (state.gameOver) return;
+                
+                let endX = e.touches[0].clientX;
+                let endY = e.touches[0].clientY;
+                let diffX = endX - startX;
+                let diffY = endY - startY;
+
+                if (Math.abs(diffX) > Math.abs(diffY)) {
+                    if (Math.abs(diffX) > 30) {
+                        if (diffX > 0 && state.dir.x === 0) state.nextDir = { x: 1, y: 0 };
+                        else if (diffX < 0 && state.dir.x === 0) state.nextDir = { x: -1, y: 0 };
+                        startX = endX; startY = endY;
+                    }
+                } else {
+                    if (Math.abs(diffY) > 30) {
+                        if (diffY > 0 && state.dir.y === 0) state.nextDir = { x: 0, y: 1 };
+                        else if (diffY < 0 && state.dir.y === 0) state.nextDir = { x: 0, y: -1 };
+                        startX = endX; startY = endY;
+                    }
+                }
+            }, {passive: false});
+        }
+
+        function handleKey(e) {
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) e.preventDefault();
+            if (state.gameOver && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
+                init();
+                return;
+            }
+
+            switch(e.key) {
+                case 'ArrowUp': if(state.dir.y === 0) state.nextDir = { x: 0, y: -1 }; break;
+                case 'ArrowDown': if(state.dir.y === 0) state.nextDir = { x: 0, y: 1 }; break;
+                case 'ArrowLeft': if(state.dir.x === 0) state.nextDir = { x: -1, y: 0 }; break;
+                case 'ArrowRight': if(state.dir.x === 0) state.nextDir = { x: 1, y: 0 }; break;
+            }
+        }
+
+        function gameLoop(timestamp) {
+            if (!state.active) return;
+            if (timestamp - state.lastTime > state.speed) {
+                update();
+                state.lastTime = timestamp;
+            }
+            if (state.active) draw();
+            loopId = requestAnimationFrame(gameLoop);
+        }
+
+        function update() {
+            state.dir = state.nextDir;
+            const head = { x: state.snake[0].x + state.dir.x, y: state.snake[0].y + state.dir.y };
+
+            if (head.x < 0 || head.x >= CONSTANTS.GRID_W || head.y < 0 || head.y >= CONSTANTS.GRID_H ||
+                state.snake.some(s => s.x === head.x && s.y === head.y)) {
+                gameOver();
+                return;
+            }
+
+            state.snake.unshift(head);
+            if (head.x === state.food.x && head.y === state.food.y) {
+                state.score += 10;
+                Utils.get('score-display').textContent = `Puntos: ${state.score}`;
+                spawnFood();
+            } else {
+                state.snake.pop();
+            }
+        }
+
+        function draw() {
+            // Fondo
+            ctx.fillStyle = '#2c3e50';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Grid
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= canvas.width; i += CONSTANTS.TILE_SIZE) {
+                ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+            }
+
+            // Snake
+            state.snake.forEach((seg, i) => {
+                ctx.fillStyle = i === 0 ? '#E0F7FA' : '#4DD0E1';
+                let x = seg.x * CONSTANTS.TILE_SIZE + 1;
+                let y = seg.y * CONSTANTS.TILE_SIZE + 1;
+                ctx.fillRect(x, y, CONSTANTS.TILE_SIZE - 2, CONSTANTS.TILE_SIZE - 2);
+                
+                if (i === 0) { // Ojos
+                    ctx.fillStyle = '#333';
+                    ctx.beginPath(); ctx.arc(x + 5, y + 5, 2.5, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(x + 13, y + 5, 2.5, 0, Math.PI*2); ctx.fill();
+                }
+            });
+
+            // Food (Heart)
+            state.beat += 0.1;
+            const scale = 1 + Math.sin(state.beat) * 0.1;
+            const cx = state.food.x * CONSTANTS.TILE_SIZE + CONSTANTS.TILE_SIZE/2;
+            const cy = state.food.y * CONSTANTS.TILE_SIZE + CONSTANTS.TILE_SIZE/2;
+            
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.scale(scale, scale);
+            ctx.translate(-cx, -cy);
+            ctx.fillStyle = '#ff6b6b';
+            drawHeart(state.food.x * CONSTANTS.TILE_SIZE, state.food.y * CONSTANTS.TILE_SIZE + 2, CONSTANTS.TILE_SIZE);
+            ctx.restore();
+        }
+
+        function drawHeart(x, y, size) {
+            ctx.beginPath();
+            ctx.moveTo(x, y + size / 4);
+            ctx.quadraticCurveTo(x, y, x + size / 4, y);
+            ctx.quadraticCurveTo(x + size / 2, y, x + size / 2, y + size / 4);
+            ctx.quadraticCurveTo(x + size / 2, y, x + size * 3/4, y);
+            ctx.quadraticCurveTo(x + size, y, x + size, y + size / 4);
+            ctx.quadraticCurveTo(x + size, y + size / 2, x + size / 2, y + size * 3/4);
+            ctx.quadraticCurveTo(x, y + size / 2, x, y + size / 4);
+            ctx.fill();
+        }
+
+        function gameOver() {
+            state.active = false;
+            state.gameOver = true;
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#ecf0f1';
+            ctx.font = 'bold 40px "Segoe UI"';
+            ctx.textAlign = 'center';
+            ctx.fillText("¡Bien Cojuda!", canvas.width/2, canvas.height/2 - 20);
+            ctx.font = '25px "Segoe UI"';
+            ctx.fillStyle = '#bdc3c7';
+            ctx.fillText("Puntos: " + state.score, canvas.width/2, canvas.height/2 + 20);
+            ctx.font = 'italic 18px "Segoe UI"';
+            ctx.fillStyle = '#95a5a6';
+            ctx.fillText("Presiona cualquier boton para continuar", canvas.width/2, canvas.height/2 + 60);
+        }
+
+        function stop() {
+            state.active = false;
+            if (loopId) cancelAnimationFrame(loopId);
+            window.removeEventListener('keydown', handleKey);
+        }
+
+        return { init, stop };
+    })();
+
+    // --- MÓDULO: HERRAMIENTAS DE DISEÑO ---
+    const DesignTools = (function() {
+        function init() {
+            const btn = Utils.get('design-tool-btn');
+            const panel = Utils.get('design-tool-panel');
+            
+            if (btn) {
+                btn.addEventListener('click', () => {
+                    panel.classList.toggle('hidden');
+                    document.body.classList.toggle('design-mode');
+                });
+            }
+
+            setupBackgroundControls();
+            setupCarouselControls();
+            setupCalendarControls();
+            setupPlayerControls();
+            setupExport();
+        }
+
+        function setupBackgroundControls() {
+            const bgEl = Utils.get('page-background');
+            const inputs = ['bg-opacity', 'bg-saturate', 'bg-blur'].map(id => Utils.get(id));
+            if (!bgEl || inputs.some(i => !i)) return;
+
+            const update = () => {
+                bgEl.style.filter = `saturate(${inputs[1].value}) opacity(${inputs[0].value}) blur(${inputs[2].value}px)`;
+            };
+            inputs.forEach(i => i.addEventListener('input', update));
+        }
+
+        function setupCarouselControls() {
+            const el = Utils.get('carousel-main-box');
+            const layer = Utils.get('carousel-bg-layer');
+            if (!el || !layer) return;
+
+            bindStyle(el, 'carousel-width', 'width', '%');
+            bindStyle(el, 'carousel-height', 'height', 'px');
+            
+            // Fondo
+            const urlIn = Utils.get('carousel-bg-url');
+            const fileIn = Utils.get('carousel-bg-file');
+            
+            if (urlIn) urlIn.addEventListener('input', () => updateBg(layer, urlIn.value));
+            if (fileIn) fileIn.addEventListener('change', (e) => handleFile(e, layer));
+
+            // Posición
+            const posX = Utils.get('carousel-bg-pos-x');
+            const posY = Utils.get('carousel-bg-pos-y');
+            const updatePos = () => layer.style.backgroundPosition = `${posX.value}% ${posY.value}%`;
+            if (posX) posX.addEventListener('input', updatePos);
+            if (posY) posY.addEventListener('input', updatePos);
+        }
+
+        function setupCalendarControls() {
+            const el = Utils.get('calendar-box');
+            const layer = Utils.get('calendar-bg-layer');
+            if (!el || !layer) return;
+
+            bindStyle(el, 'calendar-width', 'width', 'px');
+            bindStyle(el, 'calendar-height', 'height', 'px');
+
+            // Filtros
+            const op = Utils.get('calendar-bg-opacity');
+            const blur = Utils.get('calendar-bg-blur');
+            const updateFilter = () => layer.style.filter = `opacity(${op.value}) blur(${blur.value}px)`;
+            if (op) op.addEventListener('input', updateFilter);
+            if (blur) blur.addEventListener('input', updateFilter);
+
+            // Fondo
+            const urlIn = Utils.get('calendar-bg-url');
+            const fileIn = Utils.get('calendar-bg-file');
+            if (urlIn) urlIn.addEventListener('input', () => updateBg(layer, urlIn.value));
+            if (fileIn) fileIn.addEventListener('change', (e) => handleFile(e, layer));
+        }
+
+        function setupPlayerControls() {
+            const wrap = Utils.get('player-wrapper');
+            if (!wrap) return;
+
+            ['player-pos-x', 'player-pos-y', 'player-scale', 'player-exp-x', 'player-exp-y'].forEach(id => {
+                const el = Utils.get(id);
+                if (el) el.addEventListener('input', () => {
+                    if (id === 'player-pos-x') wrap.style.right = el.value + 'px';
+                    if (id === 'player-pos-y') wrap.style.bottom = el.value + 'px';
+                    if (id === 'player-scale') wrap.style.setProperty('--scale', el.value);
+                    if (id === 'player-exp-x') wrap.style.setProperty('--w-r-exp', el.value + 'px');
+                    if (id === 'player-exp-y') wrap.style.setProperty('--w-b-exp', el.value + 'px');
+                });
+            });
+        }
+
+        function setupExport() {
+            const btn = Utils.get('export-html-btn');
+            const out = Utils.get('css-output');
+            if (btn && out) {
+                btn.addEventListener('click', () => {
+                    out.style.display = 'block';
+                    out.value = Utils.query('.cards-container').outerHTML;
+                    alert("HTML copiado al área de texto.");
+                });
+            }
+        }
+
+        // Helpers locales
+        function bindStyle(el, inputId, prop, unit = '') {
+            const input = Utils.get(inputId);
+            if (input) input.addEventListener('input', () => el.style[prop] = input.value + unit);
+        }
+
+        function updateBg(el, url) {
+            if (url.trim()) {
+                el.style.backgroundImage = `url('${url}')`;
+                el.classList.add('active');
+            } else {
+                el.classList.remove('active');
+                el.style.backgroundImage = '';
+            }
+        }
+
+        function handleFile(e, el) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    el.style.backgroundImage = `url('${evt.target.result}')`;
+                    el.classList.add('active');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        return { init };
+    })();
+
+    // --- INICIALIZACIÓN GLOBAL ---
+    document.addEventListener('DOMContentLoaded', () => {
+        TimeCounters.init();
+        ImageCarousel.init();
+        CalendarWidget.init();
+        ParticleSystem.init();
+        ModalManager.init();
+        MusicPlayer.init();
+        EnvelopeAnimation.init();
+        DesignTools.init();
+        CardEditor.init();
+
+        const resetBtn = Utils.get('reset-game-btn');
+        if (resetBtn) resetBtn.addEventListener('click', SnakeGame.init);
+        if (window.lucide) lucide.createIcons();
+    });
+
+})();
+</script>
+</body>
+</html>

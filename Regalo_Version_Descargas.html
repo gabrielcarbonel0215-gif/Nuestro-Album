@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nuestro Álbum de Recuerdos</title>
+<style>
+/* --- 1. Variables y Reset Básico --- */
+:root {
+    --color-principal: #4682B4; /* Azul Marino (Elegante) */
+    --color-acento: #ff4d6d; /* Rosa (Amor/Dulce) */
+    --color-fondo-claro: rgba(255, 255, 255, 0.95);
+    --color-texto-oscuro: #333;
+    --color-texto-claro: #fff;
+    --font-family: 'Segoe UI', sans-serif;
+}
+
+/* 🛠️ NUEVO: Clase interactable para aplicar el cursor pointer/grab/help */
+.interactable {
+    cursor: url('imagenes/cinnamoroll_pointer.png'), pointer !important;
+}
+
+.draggable {
+    cursor: url('imagenes/cinnamoroll_grab.png'), grab !important;
+}
+
+.draggable:active {
+    cursor: url('imagenes/cinnamoroll_grabbing.png'), grabbing !important;
+}
+
+body {
+    font-family: var(--font-family);
+    margin: 0; padding: 0;
+    /* ✅ RUTA LOCAL: FONDO */
+    background-image: url('imagenes/fondo.jpg');
+    background-size: cover;      
+    background-position: center; 
+    background-attachment: fixed; /* 🎁 NUEVO: Fondo fijo para un efecto más inmersivo */
+    background-repeat: no-repeat; 
+    color: var(--color-texto-oscuro); 
+    text-align: center;
+    box-sizing: border-box;
+    overflow-x: hidden;
+    position: relative;
+    cursor: url('imagenes/cinnamoroll_default.png'), default; 
+}
+
+/* 🎁 Contenedor para el contenido principal */
+.main-content-wrapper {
+    max-width: 1300px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+
+/* --- 2. Partículas de Fondo --- */
+#particles-container {
+    position: fixed; /* 🎁 CAMBIO CLAVE: Fijo para que no se muevan al hacer scroll */
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: -1; 
+    overflow: hidden;
+}
+.particle {
+    position: absolute;
+    background: rgba(173, 216, 230, 0.8); 
+    border-radius: 50%;
+    animation: float var(--duration) infinite ease-in-out;
+}
+@keyframes float {
+    0% { transform: translate(0, 0); opacity: 0.8; }
+    50% { transform: translate(var(--translateX), var(--translateY)); opacity: 0.5; }
+    100% { transform: translate(0, 0); opacity: 0.8; }
+}
+
+h1 {
+    font-size: 2.5em;
+    margin-top: 20px;
+    color: var(--color-texto-claro);
+    text-shadow: none; 
+}
+
+/* --- 3. Bloque Superior y Contadores --- */
+.bloque-superior {
+    display: block; 
+    width: 100%;
+    margin: 0; 
+    padding: 50px 0 0 0; 
+}
+
+.rectangulo-izquierdo {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 50px; 
+    padding: 20px 0;
+}
+
+.time-counter-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 1.2em;
+    color: var(--color-texto-claro);
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+    padding: 0 40px; 
+    /* 🎁 NUEVO: Separador vertical entre contadores */
+    position: relative; 
+}
+
+/* 🎁 NUEVO: Linea divisoria para separar los contadores */
+#time-together::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 10%;
+    height: 80%;
+    width: 1px;
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.time-counter-box > span:first-child {
+    font-weight: bold; 
+    color: var(--color-texto-claro);
+}
+
+.time-counter-box > span:nth-child(2) {
+    font-size: 1.5em; 
+    color: var(--color-texto-claro); 
+    font-weight: 900;
+}
+
+.time-counter-box > div {
+    font-size: 0.8em;
+    font-weight: normal;
+    margin-top: 5px;
+    color: #ccc; 
+}
+
+/* --- 4. Carrusel, Calendario y Juego --- */
+
+.carousel-wrapper-flex {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.carousel-container {
+    width: 90%;
+    max-width: 1100px;
+    min-width: 600px;
+    height: 340px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    position: relative;
+}
+
+.carousel-slide {
+    display: flex;
+    height: 100%;
+    transition: transform 0.5s ease-in-out;
+}
+.carousel-slide img {
+    width: 50%; 
+    height: 100%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+.carousel-slide img:nth-child(even) { border-left: 3px solid var(--color-texto-claro); }
+
+.carousel-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 2em;
+    color: var(--color-texto-claro);
+    background: rgba(0,0,0,0.2);
+    width: 30px;
+    height: 40px;
+    line-height: 35px;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.4s ease, background 0.3s ease, transform 0.2s ease;
+    user-select: none;
+    z-index: 5;
+    border-radius: 8px;
+    font-weight: bold;
+}
+.carousel-arrow-left { left: 10px; }
+.carousel-arrow-right { right: 10px; }
+.carousel-container:hover .carousel-arrow { opacity: 1; }
+.carousel-arrow:hover {
+    background: rgba(70, 130, 180, 0.7); 
+    color: var(--color-texto-claro);
+    transform: translateY(-50%) scale(1.1);
+}
+.carousel-arrow:active {
+    transform: translateY(-50%) scale(0.95);
+}
+
+.calendar-game-block {
+    display: flex;
+    flex-direction: row;
+    gap: 15px;
+    align-items: center;
+}
+
+/* Ícono de Juego Personalizado */
+#game-icon-image {
+    width: 80px; height: 80px;
+    background: none;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    transition: transform 0.3s ease;
+    display: block;
+}
+#game-icon-image img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+}
+#game-icon-image:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+}
+
+/* Calendario */
+.extra-box {
+    width: 300px; height: 320px;
+    background: var(--color-fondo-claro);
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    display: flex; 
+    flex-direction: column;
+    align-items: center; 
+    justify-content: flex-start;
+    padding: 10px; 
+    text-align: center;
+}
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    align-items: center;
+    margin-bottom: 10px;
+}
+.calendar-header button {
+    background: none;
+    border: none;
+    color: var(--color-principal);
+    font-size: 1.2em;
+    padding: 5px 8px;
+    border-radius: 6px;
+    font-weight: bold;
+    transition: background 0.2s, color 0.2s;
+}
+.calendar-header button:hover { 
+    background: rgba(70, 130, 180, 0.2); 
+    color: var(--color-texto-oscuro); 
+}
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+    width: 100%;
+    font-size: 0.95em;
+}
+.calendar-grid div {
+    padding: 8px 0;
+    border-radius: 4px;
+    transition: background 0.2s, color 0.2s;
+    user-select: none; /* 🎁 NUEVO: Evita la selección de texto */
+}
+
+/* Estilo para los nombres de los días */
+.calendar-grid div:nth-child(-n+7) {
+    color: #999;
+    font-weight: normal;
+    font-size: 0.8em;
+    cursor: default; /* Asegura que los nombres no tengan cursor interactivo */
+}
+
+/* Días Normales con hover */
+.calendar-grid div:not(:nth-child(-n+7)):hover { 
+    background: rgba(255,77,109,0.2);
+}
+
+.calendar-grid .today { 
+    background: none; 
+    color: var(--color-texto-oscuro); 
+    font-weight: bold; 
+    border: 2px solid #ADD8E6; 
+    padding: 6px 0;
+}
+
+/* Días Especiales */
+.calendar-grid .special-day { 
+    background: rgba(173, 216, 230, 0.4); 
+    color: var(--color-texto-oscuro); 
+    font-weight: bold; 
+    border: 1px solid #ADD8E6; 
+    padding: 7px 0;
+}
+
+/* Indicadores */
+.carousel-indicators {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 7px;
+}
+.carousel-indicators div {
+    width: 60px;
+    height: 7px;
+    background: rgba(255,255,255,0.4);
+    transition: background 0.3s, transform 0.2s;
+}
+.carousel-indicators div:hover { transform: scale(1.1); }
+.carousel-indicators .active { background: rgba(255,255,255,0.8); }
+
+/* Párrafo narrativo introductorio */
+#narrative-intro {
+    max-width: 900px;
+    margin: 40px auto 20px auto;
+    padding: 20px;
+    color: var(--color-texto-claro);
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 8px;
+    font-size: 1.1em;
+    line-height: 1.6;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+/* --- 5. Tarjetas (Polaroids) --- */
+.cards-container {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-top: 40px;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-bottom: 20px;
+}
+.card {
+    width: 200px;
+    height: 310px;
+    background: var(--color-texto-claro);
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    text-align: center;
+    transition: transform 0.2s ease;
+    text-decoration: none !important;
+    color: inherit;
+}
+.card:hover {
+    transform: scale(1.05);
+}
+.card img {
+    width: 100%;
+    height: 250px;
+    object-fit: cover;
+}
+
+.card .card-content {
+    padding: 5px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.card h2 { 
+    margin: 0; 
+    font-size: 1em; 
+    color: var(--color-principal); 
+    text-decoration: none !important;
+}
+
+/* --- 6. Modal de Recuerdos --- */
+.modal {
+    display: flex;
+    opacity: 0;
+    pointer-events: none;
+    position: fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    background: rgba(0,0,0,0.5);
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    transition: opacity 0.3s ease;
+}
+.modal.show { opacity: 1; pointer-events: auto; }
+.modal-content {
+    display: flex;
+    flex-direction: row;
+    width: 90%;
+    max-width: 900px;
+    height: 400px;
+    background: var(--color-texto-claro);
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    position: relative;
+    transform: scale(0.8);
+    opacity: 0;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+.modal.show .modal-content { transform: scale(1); opacity: 1; }
+
+.modal-content .song-link-wrapper {
+    width: 40%;
+    height: auto;
+    transition: transform 0.1s ease;
+    border-radius: 8px;
+    overflow: hidden;
+    display: block; /* Para que el enlace se comporte como un bloque */
+}
+.modal-content .song-link-wrapper:hover {
+    transform: scale(1.02);
+}
+
+.modal-content .song-link-wrapper img {
+    width: 100%;
+    height: 100%;
+    border-radius: 8px;
+    object-fit: cover;
+    display: block;
+}
+
+.modal-text {
+    width: 60%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 10px;
+    padding-left: 15px;
+}
+.modal-text h2 { margin: 0; font-size: 1.5em; color: var(--color-principal); }
+.modal-text p { font-size: 1em; color: var(--color-texto-oscuro); }
+.modal-text a { color: var(--color-acento); text-decoration: none; font-weight: bold; }
+
+.cerrar {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 25px;
+}
+
+/* Modal de Juego */
+#game-modal .modal-content-game {
+    background: var(--color-texto-claro);
+    padding: 30px;
+    border-radius: 12px;
+    text-align: center;
+    max-width: 400px;
+}
+#game-modal .modal-content-game h2 {
+    color: var(--color-principal);
+    margin-bottom: 15px;
+}
+#game-modal .modal-content-game p {
+    margin-bottom: 25px;
+    font-size: 1.1em;
+}
+#game-modal .modal-content-game a {
+    text-decoration: none;
+    padding: 10px 25px;
+    background: #b85066;
+    color: var(--color-texto-claro);
+    border-radius: 8px;
+    font-weight: bold;
+    transition: background 0.2s;
+}
+#game-modal .modal-content-game a:hover {
+    background: #9a4254;
+}
+
+
+/* --- 7. Sección de Razones Dinámicas --- */
+#reasons-box {
+    width: 600px;
+    height: 150px;
+    background: var(--color-fondo-claro);
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin: 20px auto;
+    border: 1px solid #ADD8E6;
+}
+
+#reason-text {
+    font-size: 1.3em;
+    font-style: italic;
+    color: var(--color-principal);
+    margin-bottom: 20px;
+    min-height: 40px;
+    text-align: center;
+    transition: opacity 0.3s ease;
+}
+
+#next-reason-btn {
+    background: var(--color-principal);
+    color: var(--color-texto-claro);
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: bold;
+    transition: background 0.3s ease, transform 0.1s;
+}
+
+#next-reason-btn:hover {
+    background: #36658d;
+    transform: translateY(-1px);
+}
+
+/* --- 8. Mensaje Final --- */
+#final-message-container {
+    width: 100%;
+    padding: 40px 20px;
+    margin-top: 40px;
+    background: var(--color-fondo-claro);
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+}
+#final-message {
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: center;
+}
+#final-message h2 {
+    color: var(--color-principal);
+    font-size: 1.8em;
+    margin-bottom: 15px;
+}
+#final-message p {
+    font-size: 1.1em;
+    color: var(--color-texto-oscuro);
+    line-height: 1.6;
+}
+
+/* --- 9. Media Queries (Responsividad) --- */
+@media (max-width: 1200px) {
+    .carousel-wrapper-flex {
+        flex-direction: column;
+        align-items: center;
+    }
+    .carousel-container {
+        min-width: 90%;
+        max-width: 90%;
+        height: 300px;
+    }
+    .calendar-game-block {
+        margin-top: 20px;
+    }
+}
+
+@media (max-width: 768px) {
+    h1 { font-size: 2em; }
+    .carousel-container {
+        min-width: 95%;
+        height: 200px;
+    }
+    .carousel-slide img {
+        width: 100%; /* Una sola imagen en móvil */
+    }
+    .carousel-indicators div {
+        width: 30px;
+        height: 5px;
+    }
+    .calendar-game-block {
+        flex-direction: column;
+        gap: 10px;
+    }
+    .extra-box {
+        width: 95vw;
+        max-width: 300px;
+        height: auto;
+    }
+    .cards-container {
+        gap: 10px;
+    }
+    .card {
+        width: 150px;
+        height: 250px;
+    }
+    .card img {
+        height: 190px;
+    }
+    #reasons-box {
+        width: 95%;
+        height: auto;
+        padding: 20px 10px;
+    }
+    #reason-text {
+        font-size: 1.1em;
+    }
+    .modal-content {
+        flex-direction: column;
+        height: auto;
+        max-width: 95%;
+        padding: 15px;
+    }
+    .modal-content .song-link-wrapper, .modal-text {
+        width: 100%;
+        padding: 0;
+        margin-top: 15px;
+    }
+}
+</style>
+</head>
+<body>
+<!-- 🎁 NUEVO: Contenedor para las partículas (Fixed Position) --><div id="particles-container"></div> 
+
+<!-- ✅ NUEVO: Contenedor principal para aplicar límites y centrar el contenido (NO incluye el mensaje final) --><div class="main-content-wrapper">
+
+    <!-- Título Principal -->
+    <h1>Nuestro Álbum de Recuerdos</h1>
+
+    <!-- Bloque superior (Contadores) -->
+    <div class="bloque-superior">
+        <div class="rectangulo-izquierdo">
+            <!-- 🛠️ SIMPLIFICACIÓN: Contenedor Flex para los contadores Lado a Lado -->
+            <div style="display: flex; justify-content: center; align-items: flex-start; width: 100%;">
+                
+                <!-- 🎁 COLUMNA IZQUIERDA: Contador de cuando se conocieron -->
+                <div id="time-since-met" class="time-counter-box" data-date="April 29, 2021 00:00:00" data-label="Nos conocimos hace:" style="width: 50%; text-align: right;">
+                    <!-- Inicialmente vacío o con un mensaje de carga -->
+                    <p style="color: #ccc;">Calculando...</p>
+                </div>
+                
+                <!-- 🎁 COLUMNA DERECHA: Contador de aniversario -->
+                <div id="time-together" class="time-counter-box" data-date="October 11, 2025 00:00:00" data-label="Estamos juntos desde:" style="width: 50%; text-align: left;">
+                     <!-- Inicialmente vacío o con un mensaje de carga -->
+                     <p style="color: #ccc;">Calculando...</p>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+
+    <!-- Carrusel + calendario -->
+    <div class="carousel-wrapper-flex">
+        <div class="carousel-container draggable">
+            <div class="carousel-slide">
+                <!-- 🎁 NUEVO: Añadido loading="lazy" a las imágenes -->
+                <img src="imagenes/foto1.jpg" alt="Foto 1" loading="lazy">
+                <img src="imagenes/foto2.jpg" alt="Foto 2" loading="lazy">
+                <img src="imagenes/foto3.jpg" alt="Foto 3" loading="lazy">
+                <img src="imagenes/foto4.jpg" alt="Foto 4" loading="lazy">
+                <img src="imagenes/foto5.jpg" alt="Foto 5" loading="lazy">
+                <img src="imagenes/foto6.jpg" alt="Foto 6" loading="lazy">
+            </div>
+            <!-- Flechas del carrusel -->
+            <div class="carousel-arrow carousel-arrow-left interactable">&#10094;</div>
+            <div class="carousel-arrow carousel-arrow-right interactable">&#10095;</div>
+        </div>
+
+        <!-- Contenedor para Calendario e Imagen de Juego -->
+        <div class="calendar-game-block">
+
+            <div class="extra-box" id="calendar-box">
+                <div class="calendar-header">
+                    <button id="prev-month" class="interactable">&lt;</button>
+                    <span id="month-year"></span>
+                    <button id="next-month" class="interactable">&gt;</button>
+                </div>
+                <div class="calendar-grid" id="calendar-grid"></div>
+            </div>
+        
+            <!-- Ícono de Juego (Imagen Personalizable) - Se abre el modal de juego -->
+            <a id="game-icon-image" href="#" class="open-game-modal-btn interactable">
+                <img src="imagenes/icono_juego.png" alt="Icono de Juego">
+            </a>
+
+        </div>
+        
+    </div>
+
+    <div class="carousel-indicators">
+        <!-- Los indicadores se generarán dinámicamente en JS -->
+    </div>
+
+    <!-- Párrafo narrativo introductorio -->
+    <div id="narrative-intro">
+        Escuché que el ser humano puede "atesorar" momentos o revivirlos a través de olores y sonidos, gracias a una conexión con nuestro sistema límbico, creando un "viaje" sensorial vivido. Contigo me ocurre de ambas formas, pero no puedo "guardar" un olor... lastimosamente, pero sí puedo explicarte aquello que me hace sentir o recordar estas canciones.
+    </div>
+
+
+    <!-- Polaroids - INICIA LA SECCIÓN DE RECUERDOS MUSICALES -->
+    <div class="cards-container">
+      <!-- Los atributos data-desc y data-link han sido limpiados de caracteres extraños -->
+      
+      <!-- 📌 TARJETA 1 -->
+      <a href="#" class="card interactable" 
+         data-img="imagenes/cancion1_modal.jpg" 
+         data-title="Verte Así - Micro TDH ft. Lasso" 
+         data-desc="Esta canción captura el sentimiento de encontrar la perfección en la sencillez de un momento compartido. Me recuerda a esos días en que todo es simple y perfecto, solo por verte sonreír."
+         data-link="https://open.spotify.com/intl-es/track/1JHHZ16XkJuUeBC5RjMBWo?si=179bf797d8ea4235">
+        <img src="imagenes/cancion1.jpg" alt="Verte Así" loading="lazy">
+        <div class="card-content">
+          <h2>Verte Así</h2>
+        </div>
+      </a>
+
+      <!-- 📌 TARJETA 2 -->
+      <a href="#" class="card interactable"
+         data-img="imagenes/cancion2_modal.jpg" 
+         data-title="Chica Acuario - Título y Artista" 
+         data-desc="El aire de misterio y el encanto único que proyectas, justo como la energía de un acuario. Es una canción de admiración a tu inteligencia y espíritu libre."
+         data-link="https://open.spotify.com/intl-es/track/1WA8VUCFiAIw34RgZIM53P?si=97762340a6ec4bb6">
+        <img src="imagenes/cancion2.jpg" alt="Chica Acuario" loading="lazy">
+        <div class="card-content">
+          <h2>Chica Acuario</h2>
+        </div>
+      </a>
+
+      <!-- 📌 TARJETA 3 -->
+      <a href="#" class="card interactable"
+         data-img="imagenes/cancion3_modal.jpg" 
+         data-title="Ojitos de Md - Título y Artista" 
+         data-desc="La inocencia y el brillo en tus ojos; esta canción me transporta a la primera vez que vi esa luz en tu mirada. Pura dulzura."
+         data-link="https://open.spotify.com/intl-es/track/0wf7Lfgc29qUg4DeWzGHNZ?si=82d5343fdd534d0e">
+        <img src="imagenes/cancion3.jpg" alt="Ojitos de Md" loading="lazy">
+        <div class="card-content">
+          <h2>Ojitos de Md</h2>
+        </div>
+      </a>
+
+      <!-- 📌 TARJETA 4 -->
+      <a href="#" class="card interactable"
+         data-img="imagenes/cancion4_modal.jpg" 
+         data-title="Compañera - Título y Artista" 
+         data-desc="Más que una pareja, eres mi mejor compañera de vida. Esta melodía habla de la lealtad y el camino que construimos juntos, paso a paso."
+         data-link="https://open.spotify.com/intl-es/track/3dZkhn86FJsjbM4iHiQokW?si=226b69a5f0aa4098">
+        <img src="imagenes/cancion4.jpg" alt="Compañera" loading="lazy">
+        <div class="card-content">
+          <h2>Compañera</h2>
+        </div>
+      </a>
+
+      <!-- 📌 TARJETA 5 -->
+      <a href="#" class="card interactable"
+         data-img="imagenes/cancion5_modal.jpg" 
+         data-title="Niño Amor - Título y Artista" 
+         data-desc="Con cada beso me haces sentir esa alegría simple y pura de un primer amor. Me recuerdas a esa sensación de ser joven y eternamente feliz."
+         data-link="https://open.spotify.com/intl-es/track/5yvRzb8VoPb8pvv6ACiFdW?si=81fa368d64914ccb">
+        <img src="imagenes/cancion5.jpg" alt="Niño Amor" loading="lazy">
+        <div class="card-content">
+          <h2>Niño Amor</h2>
+        </div>
+      </a>
+
+      <!-- 📌 TARJETA 6 -->
+      <a href="#" class="card interactable"
+         data-img="imagenes/cancion6_modal.jpg" 
+         data-title="O Pato - Título y Artista" 
+         data-desc="Una canción que siempre me saca una sonrisa. Es un recordatorio de que nuestros momentos más tontos y relajados son a menudo los más valiosos."
+         data-link="https://open.spotify.com/intl-es/track/2FF003rfmlKnWH7nBbJimw?si=0983269c66e94fec">
+        <img src="imagenes/cancion6.jpg" alt="O Pato" loading="lazy">
+        <div class="card-content">
+          <h2>O Pato</h2>
+        </div>
+      </a>
+      
+      <!-- 📌 TARJETA 7 -->
+      <a href="#" class="card interactable"
+         data-img="imagenes/cancion7_modal.jpg" 
+         data-title="Canción 7 - Título y Artista" 
+         data-desc="Esta melodía me recuerda a la calma que encuentro al escuchar tu voz. Es mi refugio en los días ruidosos."
+         data-link="https://enlace-a-spotify.com/cancion7">
+        <img src="imagenes/cancion7.jpg" alt="Canción 7" loading="lazy">
+        <div class="card-content">
+          <h2>Canción 7</h2>
+        </div>
+      </a>
+
+      <!-- 📌 TARJETA 8 -->
+      <a href="#" class="card interactable"
+         data-img="imagenes/cancion8_modal.jpg" 
+         data-title="Canción 8 - Título y Artista" 
+         data-desc="Una canción que me hace pensar en todas las aventuras que aún nos faltan por vivir. Con cada nota, el futuro se siente más brillante."
+         data-link="https://enlace-a-spotify.com/cancion8">
+        <img src="imagenes/cancion8.jpg" alt="Canción 8" loading="lazy">
+        <div class="card-content">
+          <h2>Canción 8</h2>
+        </div>
+      </a>
+      
+      <!-- 📌 TARJETA 9 -->
+      <a href="#" class="card interactable"
+         data-img="imagenes/cancion9_modal.jpg" 
+         data-title="Canción 9 - Título y Artista" 
+         data-desc="El ritmo de esta pieza es como nuestro corazón latiendo al mismo tiempo. Sincronía perfecta, un recuerdo inolvidable de un baile."
+         data-link="https://enlace-a-spotify.com/cancion9">
+        <img src="imagenes/cancion9.jpg" alt="Canción 9" loading="lazy">
+        <div class="card-content">
+          <h2>Canción 9</h2>
+        </div>
+      </a>
+
+      <!-- 📌 TARJETA 10 -->
+      <a href="#" class="card interactable"
+         data-img="imagenes/cancion10_modal.jpg" 
+         data-title="Canción 10 - Título y Artista" 
+         data-desc="Cada acorde me recuerda que, sin importar los desafíos, siempre elegiremos estar juntos. Es una canción de compromiso silencioso."
+         data-link="https://enlace-a-spotify.com/cancion10">
+        <img src="imagenes/cancion10.jpg" alt="Canción 10" loading="lazy">
+        <div class="card-content">
+          <h2>Canción 10</h2>
+        </div>
+      </a>
+
+      <!-- 📌 TARJETA 11 -->
+      <a href="#" class="card interactable"
+         data-img="imagenes/cancion11_modal.jpg" 
+         data-title="Canción 11 - Título y Artista" 
+         data-desc="El sonido de fondo de nuestra primera cita, una cafetería, una conversación interminable. Un clásico que atesoramos."
+         data-link="https://open.spotify.com/intl-es/track/2FF003rfmlKnWH7nBbJimw?si=0983269c66e94fec">
+        <img src="imagenes/cancion11.jpg" alt="Canción 11" loading="lazy">
+        <div class="card-content">
+          <h2>Canción 11</h2>
+        </div>
+      </a>
+    </div>
+    
+    <!-- TÍTULO DE SECCIÓN: RAZONES POR LAS QUE TE AMO -->
+    <h1 style="font-size: 2em; color: var(--color-principal); text-shadow: none; margin-top: 40px; margin-bottom: 20px;">10 Razones y Más</h1>
+
+    <!-- Sección de Razones Dinámicas -->
+    <div id="reasons-box">
+        <p id="reason-text">Dale al botón para descubrir una razón por la que te amo...</p>
+        <button id="next-reason-btn" class="interactable">¡Dame una Razón!</button>
+    </div>
+</div>
+
+<!-- Mensaje Final y Explicación -->
+<div id="final-message-container">
+    <div id="final-message">
+        <h2>💌 Una Nota Sobre Este Regalo</h2>
+        <p>
+            Pensaba darte esto hace muchísimo tiempo, y realmente agradezco mucho que no pasó, ya que no hubiera tenido la oportunidad de incluir imágenes juntos. No obstante, antes de "conocernos", para mí esto ya era muy real: tú me tenías cautivado. Con un simple mensaje en el cual demostraras tu esencia, yo estaba enamorado. Pero tenerte a mi lado es como un sueño, tú eres increíble y quiero estar a tu lado toda mi vida para yo también ser increíble. Te admiro muchísimo y me encanta la persona que eres, y la inteligencia enorme que posees. Quizás soy "sapiofilico", me gusta cachar sapos, jaja. Te amo demasiado Keyla.
+        </p>
+    </div>
+</div>
+
+<!-- Modal de Recuerdos -->
+<div class="modal" id="modal">
+    <div class="modal-content">
+        <span class="cerrar interactable" id="cerrar">&times;</span>
+        
+        <!-- Enlace de la imagen a Spotify/YouTube -->
+        <a id="modal-image-link" class="song-link-wrapper interactable" href="#" target="_blank">
+            <img id="modal-img" src="" alt="Imagen de la canción">
+        </a>
+        
+        <div class="modal-text">
+            <h2 id="modal-title"></h2>
+            <!-- Descripción del recuerdo -->
+            <p id="modal-desc"></p>
+        </div>
+    </div>
+</div>
+
+<!-- Modal del Juego -->
+<div class="modal" id="game-modal">
+    <div class="modal-content modal-content-game">
+        <span class="cerrar interactable" id="cerrar-game-modal">&times;</span>
+        <h2>¡Tienes un Desafío!</h2>
+        <p>¿Qué tan bien recuerdas nuestros momentos? ¡Demuéstralo encontrando todas las parejas de fotos!</p>
+        <!-- 🛠️ Mejorado: El botón es un simple enlace dentro del modal, manteniendo la funcionalidad de redirigir. -->
+        <a href="game.html" class="interactable">Iniciar Juego Ahora</a>
+    </div>
+</div>
+
+<script>
+// --- 0. Constantes y Configuración Inicial ---
+const DATES = {
+    together: { id: 'time-together', date: new Date('October 11, 2025 00:00:00'), label: 'Estamos juntos desde:' },
+    met: { id: 'time-since-met', date: new Date('April 29, 2021 00:00:00'), label: 'Nos conocimos hace:' }
+};
+const REASONS_LIST = [
+    "Tu inteligencia y la forma en que ves el mundo. Me inspiras.",
+    "La paz que siento cada vez que estamos juntos.",
+    "Tu risa, es la melodía más bonita que existe.",
+    "La inmensa lealtad y apoyo incondicional que me brindas.",
+    "La dulzura que tienes incluso en tus momentos más serios.",
+    "Tu habilidad para hacerme ver el lado positivo de todo.",
+    "Me encanta que me retes a ser una mejor persona.",
+    "Eres mi mejor amiga y mi compañera de vida.",
+    "Los pequeños detalles que tienes y que me hacen sentir único.",
+    "Tu pasión por lo que te gusta y tu espíritu soñador.",
+    "Eres increíblemente fuerte y resiliente. Te admiro.",
+    "Simplemente, porque me haces el hombre más feliz del universo.",
+    "Tu sonrisa. Es mi lugar favorito en el mundo.",
+];
+const PARTICLES_COUNT = 30; // 🛠️ OPTIMIZACIÓN: Número fijo de partículas para evitar sobrecarga.
+
+
+// --- 1. Lógica de Contadores de Tiempo (Refactorizado) ---
+
+/**
+ * Actualiza un contador de tiempo dado un elemento y una fecha inicial.
+ * @param {object} config - Objeto con id, date y label.
+ */
+function updateTimeCounter(config) {
+    const element = document.getElementById(config.id);
+    if (!element) return;
+
+    const now = new Date();
+    const diff = now - config.date;
+
+    // Si la fecha es futura, mostramos un mensaje diferente
+    if (diff < 0) {
+         element.innerHTML = `
+            <span style="font-weight: bold; color: var(--color-texto-claro);">${config.label}</span>
+            <span style="font-size: 1.5em; color: var(--color-texto-claro); font-weight: 900;">
+                ¡Falta poco!
+            </span>
+            <div style="font-size: 0.8em; color: #ccc;">
+                Aún no hemos llegado a esa fecha.
+            </div>
+        `;
+        return;
+    }
+
+    const totalSeconds = Math.floor(diff / 1000);
+    const totalMinutes = Math.floor(totalSeconds / 60);
+    const totalHours = Math.floor(totalMinutes / 60);
+    const totalDays = Math.floor(totalHours / 24);
+    
+    // Cálculo de Años y Días
+    const years = Math.floor(totalDays / 365.25);
+    const remainingDays = Math.floor(totalDays % 365.25);
+
+    // Cálculo de Horas, Minutos y Segundos
+    const remainingHours = totalHours % 24;
+    const remainingMinutes = totalMinutes % 60;
+    const remainingSeconds = totalSeconds % 60;
+
+    element.innerHTML = `
+        <span style="font-weight: bold; color: var(--color-texto-claro);">${config.label}</span>
+        <span style="font-size: 1.5em; color: var(--color-texto-claro); font-weight: 900;">
+            ${years} Años, ${remainingDays} Días
+        </span>
+        <div style="font-size: 0.8em; color: #ccc;">
+            ${remainingHours.toString().padStart(2, '0')} Horas, ${remainingMinutes.toString().padStart(2, '0')} Minutos y ${remainingSeconds.toString().padStart(2, '0')} Segundos
+        </div>
+    `;
+}
+
+// Inicia y actualiza ambos contadores
+function initializeCounters() {
+    updateTimeCounter(DATES.together);
+    updateTimeCounter(DATES.met);
+    // 🛠️ Se eliminó el texto inicial en el HTML, ya no es necesario buscarlo para borrarlo.
+    setInterval(() => {
+        updateTimeCounter(DATES.together);
+        updateTimeCounter(DATES.met);
+    }, 1000);
+}
+
+
+// --- 2. Lógica del Carrusel ---
+const carousel = document.querySelector('.carousel-container');
+const slide = document.querySelector('.carousel-slide');
+const images = document.querySelectorAll('.carousel-slide img');
+const indicatorsContainer = document.querySelector('.carousel-indicators');
+const totalSlides = images.length / 2; // Dos imágenes por slide visible
+let currentIndex = 0;
+let autoSlideInterval;
+
+// 🎁 NUEVO: Generar indicadores dinámicamente
+function setupIndicators() {
+    for (let i = 0; i < totalSlides; i++) {
+        const dot = document.createElement('div');
+        dot.classList.add('interactable');
+        if (i === 0) dot.classList.add('active');
+        dot.dataset.index = i;
+        indicatorsContainer.appendChild(dot);
+    }
+}
+setupIndicators();
+const indicators = document.querySelectorAll('.carousel-indicators div');
+
+
+function showSlide(index) {
+    const slideWidth = carousel.offsetWidth;
+    // La traducción es el índice * ancho del slide, ya que el slide contiene dos imágenes (50% cada una).
+    const translateValue = Math.round(index * slideWidth); 
+    slide.style.transform = `translateX(-${translateValue}px)`;
+    
+    indicators.forEach(dot => dot.classList.remove('active'));
+    // Asegura que el índice esté dentro del rango
+    if (indicators[index]) {
+        indicators[index].classList.add('active');
+    }
+}
+
+function nextSlide() { 
+    currentIndex = (currentIndex + 1) % totalSlides; 
+    showSlide(currentIndex); 
+}
+
+function startAutoSlide() { autoSlideInterval = setInterval(nextSlide, 14000); }
+function stopAutoSlide() { clearInterval(autoSlideInterval); }
+
+
+// 🛠️ USO DE DELEGACIÓN DE EVENTOS para flechas e indicadores (Más limpio)
+carousel.addEventListener('click', (e) => {
+    if (e.target.classList.contains('carousel-arrow-left')) {
+        currentIndex = (currentIndex - 1 + totalSlides) % totalSlides;
+        showSlide(currentIndex);
+    } else if (e.target.classList.contains('carousel-arrow-right')) {
+        nextSlide();
+    }
+});
+
+indicatorsContainer.addEventListener('click', (e) => {
+    if (e.target.dataset.index) {
+        currentIndex = parseInt(e.target.dataset.index);
+        showSlide(currentIndex);
+    }
+});
+
+// Eventos de auto-slide (se mantienen)
+carousel.addEventListener('mouseenter', stopAutoSlide);
+carousel.addEventListener('mouseleave', startAutoSlide);
+
+// Inicialización del carrusel
+showSlide(currentIndex);
+startAutoSlide();
+
+
+// --- 3. Lógica del Modal de Recuerdos y Juego (Refactorizado) ---
+const modal = document.getElementById('modal');
+const gameModal = document.getElementById('game-modal');
+
+// Función genérica para abrir/cerrar modales
+function toggleModal(modalElement, show = true) {
+    if (show) {
+        modalElement.classList.add('show');
+    } else {
+        modalElement.classList.remove('show');
+    }
+}
+
+// 🛠️ DELEGACIÓN DE EVENTOS para tarjetas
+document.querySelector('.cards-container').addEventListener('click', (e) => {
+    const card = e.target.closest('.card');
+    if (card) {
+        e.preventDefault(); 
+        
+        const modalImg = document.getElementById('modal-img');
+        const modalTitle = document.getElementById('modal-title');
+        const modalDesc = document.getElementById('modal-desc');
+        const modalImageLink = document.getElementById('modal-image-link'); 
+
+        modalImg.src = card.dataset.img;
+        modalTitle.textContent = card.dataset.title;
+        modalDesc.textContent = card.dataset.desc; 
+        modalImageLink.href = card.dataset.link || '#';
+        
+        toggleModal(modal, true);
+    }
+});
+
+// 🛠️ DELEGACIÓN DE EVENTOS para cerrar modales y abrir modal de juego
+document.body.addEventListener('click', (e) => {
+    // Cerrar modal al clickear la X o fuera del contenido
+    if (e.target.id === 'cerrar' || e.target === modal) {
+        toggleModal(modal, false);
+    }
+    if (e.target.id === 'cerrar-game-modal' || e.target === gameModal) {
+        toggleModal(gameModal, false);
+    }
+    
+    // Abrir modal de juego al clickear el icono
+    if (e.target.closest('.open-game-modal-btn')) {
+        e.preventDefault();
+        toggleModal(gameModal, true);
+    }
+});
+
+
+// --- 4. Lógica del Calendario (Mantenida, con optimización) ---
+const calendarGrid = document.getElementById('calendar-grid');
+const monthYear = document.getElementById('month-year');
+let today = new Date();
+let currentMonth = today.getMonth();
+let currentYear = today.getFullYear();
+const meses = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+const diasSemana = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"]; 
+
+function renderCalendar(month, year) {
+    calendarGrid.innerHTML = "";
+    // Nombres de días
+    diasSemana.forEach(d => {
+        const div = document.createElement('div');
+        div.textContent = d;
+        calendarGrid.appendChild(div);
+    });
+    
+    const firstDay = new Date(year, month, 1).getDay();
+    const lastDate = new Date(year, month + 1, 0).getDate();
+    let day = 1;
+    for (let i = 0; i < 42; i++) {
+        const div = document.createElement('div');
+        if (i >= firstDay && day <= lastDate) {
+            div.textContent = day;
+            
+            // Marca el día de hoy
+            if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+                div.classList.add('today');
+            }
+
+            // Marca Días Especiales
+            if (day === 11) {
+                div.classList.add('special-day');
+                div.title = "Día 11: Nuestro Día (No Oficial) ❤️";
+                div.classList.add('interactable');
+            }
+            if (day === 16) {
+                div.classList.add('special-day');
+                div.title = "Día 16: Nuestro Aniversario Oficial 🥳";
+                div.classList.add('interactable');
+            }
+            
+            day++;
+        }
+        // Días de mes anteriores/siguientes (sin estilo de día, sin cursor interactable)
+        calendarGrid.appendChild(div);
+    }
+    monthYear.textContent = `${meses[month]} ${year}`;
+}
+
+// 🛠️ DELEGACIÓN DE EVENTOS para la navegación del calendario
+document.getElementById('calendar-box').addEventListener('click', (e) => {
+    if (e.target.id === 'prev-month') {
+        currentMonth--;
+        if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+        renderCalendar(currentMonth, currentYear);
+    } else if (e.target.id === 'next-month') {
+        currentMonth++;
+        if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+        renderCalendar(currentMonth, currentYear);
+    }
+});
+
+renderCalendar(currentMonth, currentYear);
+
+
+// --- 5. Lógica de Razones por las que te Amo (Limpiada) ---
+const reasonText = document.getElementById('reason-text');
+const nextReasonBtn = document.getElementById('next-reason-btn');
+let lastReasonIndex = -1;
+
+nextReasonBtn.addEventListener('click', () => {
+    if (REASONS_LIST.length === 0) {
+        reasonText.textContent = "¡Necesitas añadir tus razones de amor aquí! La lista está vacía. ❤️";
+        return;
+    }
+
+    reasonText.style.opacity = 0;
+
+    setTimeout(() => {
+        let newIndex;
+        // Selecciona un índice aleatorio diferente al anterior
+        do {
+            newIndex = Math.floor(Math.random() * REASONS_LIST.length);
+        } while (newIndex === lastReasonIndex); 
+
+        reasonText.textContent = REASONS_LIST[newIndex];
+        lastReasonIndex = newIndex;
+
+        reasonText.style.opacity = 1;
+    }, 300);
+});
+
+
+// --- 6. Lógica de Partículas (Optimización y Refactorización) ---
+const particlesContainer = document.getElementById('particles-container');
+
+function createParticle() {
+    const particle = document.createElement('div');
+    particle.classList.add('particle');
+    
+    // Asignación de variables CSS aleatorias
+    const size = Math.random() * 3 + 1;
+    const duration = Math.random() * 10 + 10;
+    const delay = Math.random() * -20;
+    const translateX = Math.random() * 40 - 20; // -20px a 20px
+    const translateY = Math.random() * 40 - 20; // -20px a 20px
+
+    particle.style.left = `${Math.random() * 100}%`;
+    particle.style.top = `${Math.random() * 100}%`;
+    particle.style.width = `${size}px`;
+    particle.style.height = `${size}px`;
+
+    // Uso de variables CSS para la animación
+    particle.style.setProperty('--duration', `${duration}s`);
+    particle.style.setProperty('--translateX', `${translateX}px`);
+    particle.style.setProperty('--translateY', `${translateY}px`);
+    particle.style.animationDelay = `${delay}s`;
+    
+    particlesContainer.appendChild(particle);
+
+    // 🛠️ NO ELIMINAR ELEMENTOS: Ahora que el conteo es fijo (PARTICLES_COUNT), 
+    // es mejor dejar que la animación se repita. Si se añadieran más, sí habría que borrarlos.
+}
+
+// 🛠️ ÚNICA INICIALIZACIÓN: Crear el número fijo de partículas al inicio
+function initializeParticles() {
+    for (let i = 0; i < PARTICLES_COUNT; i++) {
+        createParticle();
+    }
+}
+
+// Inicialización de la aplicación
+window.onload = function() {
+    initializeCounters();
+    initializeParticles();
+    // Añadimos el cursor interactable a todos los elementos con la clase
+    document.querySelectorAll('.interactable').forEach(el => {
+        el.style.setProperty('cursor', "url('imagenes/cinnamoroll_pointer.png'), pointer", 'important');
+    });
+    document.querySelectorAll('.draggable').forEach(el => {
+        el.style.setProperty('cursor', "url('imagenes/cinnamoroll_grab.png'), grab", 'important');
+    });
+};
+</script>
+</body>
+</html>

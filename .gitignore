@@ -1,0 +1,11 @@
+# Ignorar archivos multimedia > 100MB (bloqueados por GitHub)
+*.mp4
+imagenes/a/fondo.mp4
+
+# Archivos temporales y de depuracion
+*.log
+chrome_log.txt
+temp_err.txt
+debug_layout.txt
+final_mobile_preview.png
+screenshot.png
