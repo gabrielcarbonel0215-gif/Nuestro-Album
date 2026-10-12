@@ -888,6 +888,11 @@ Y tal vez intento darle profundidad a algo que es más simple, pero cuando habla
         let state = 0;
         let isTyping = false;
         const IMAGES = ['imagenes/animaciones/sobre/sobre_cerrado.png','imagenes/animaciones/sobre/sobre_medio.png','imagenes/animaciones/sobre/sobre_abierto.png'];
+        // Preload inmediato en memoria
+        IMAGES.forEach(src => {
+            const img = new Image();
+            img.src = src;
+        });
 
                 // Audio Context para el sonido de máquina de escribir
         let audioCtx = null;
@@ -1039,7 +1044,10 @@ Y tal vez intento darle profundidad a algo que es más simple, pero cuando habla
                 envelopeStage.style.display = 'none';
                 envelopeStage.style.opacity = '0';
             }
-            if (overlay) overlay.classList.remove('hidden');
+            if (overlay) {
+                overlay.classList.remove('hidden');
+                if (window.MobileHistoryManager) MobileHistoryManager.pushModalState('letter-overlay');
+            }
             if (letterStage) {
                 letterStage.classList.remove('hidden-stage');
                 const content = letterStage.querySelector('.letter-content');
@@ -1089,6 +1097,7 @@ Y tal vez intento darle profundidad a algo que es más simple, pero cuando habla
                 if (overlay) {
                     overlay.classList.remove('hidden');
                     document.body.classList.add('letter-overlay-open');
+                    if (window.MobileHistoryManager) MobileHistoryManager.pushModalState('letter-overlay');
                 }
             });
 
@@ -1338,7 +1347,7 @@ Y tal vez intento darle profundidad a algo que es más simple, pero cuando habla
         function preloadImages(callback) {
             const totalFrames = 9; let loaded = 0;
             const onImageLoad = () => { loaded++; if (loaded === totalFrames) callback(); };
-            for (let i = 1; i <= totalFrames; i++) { const img = new Image(); img.onload = onImageLoad; img.onerror = onImageLoad; img.src = `imagenes/animaciones/puertas/Door_${i}.png`; }
+            for (let i = 1; i <= totalFrames; i++) { const img = new Image(); img.onload = onImageLoad; img.onerror = onImageLoad; img.src = `imagenes/animaciones/puertas/door_${i}.png`; }
         }
         function init() {
             const container = Utils.query('.carousel-container'); if (!container) return;
@@ -1398,35 +1407,24 @@ Y tal vez intento darle profundidad a algo que es más simple, pero cuando habla
             if (targetIndex >= state.slides.length) targetIndex = 0;
             const doorOverlay = Utils.get('door-overlay'); let currentState = 1;
             
-            // --- NUEVO: ANIMACIÓN SÚPER FLUIDA CON REQUEST ANIMATION FRAME ---
-            let lastTime = 0;
-            const frameDuration = 55; // 55ms = aprox 18 FPS fluidos
-            
-            const animate = (timestamp) => {
-                if (!lastTime) lastTime = timestamp;
-                const elapsed = timestamp - lastTime;
+            const frameDuration = 65; // Duración perfecta para visualización nítida de cada estado
+            const step = () => {
+                if (doorOverlay) doorOverlay.dataset.state = currentState;
+                if (currentState === 5) updateContent(targetIndex);
                 
-                if (elapsed >= frameDuration) {
-                    if (doorOverlay) doorOverlay.dataset.state = currentState;
-                    if (currentState === 5) updateContent(targetIndex);
-                    
-                    if (currentState < 9) { 
-                        currentState++; 
-                        lastTime = timestamp;
-                        requestAnimationFrame(animate); 
-                    } else { 
-                        setTimeout(() => { 
-                            currentState = 1; 
-                            if(doorOverlay) doorOverlay.dataset.state = 1; 
-                            state.isAnimating = false; 
-                            startAuto(); 
-                        }, frameDuration); 
-                    }
+                if (currentState < 9) {
+                    currentState++;
+                    setTimeout(step, frameDuration);
                 } else {
-                    requestAnimationFrame(animate);
+                    setTimeout(() => {
+                        currentState = 1;
+                        if (doorOverlay) doorOverlay.dataset.state = 1;
+                        state.isAnimating = false;
+                        startAuto();
+                    }, frameDuration);
                 }
             };
-            requestAnimationFrame(animate);
+            step();
         }
         function updateContent(index) {
             state.currentSlide = index;
@@ -1698,18 +1696,33 @@ Y tal vez intento darle profundidad a algo que es más simple, pero cuando habla
             if (imgWrapper) {
                 imgWrapper.addEventListener('click', handleModalImageClick);
             }
+            const closeBtn = Utils.get('close-modal-btn');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    Utils.toggleDisplay(modal, false);
+                    currentCardInModal = null;
+                });
+            }
         }
 
         function handleGlobalClick(e) {
             const target = e.target;
-            if (target === modal || target.id === 'close-edit-card') { 
+            if (target === modal || target.id === 'close-modal-btn' || target.closest('#close-modal-btn') || target.id === 'close-edit-card') { 
                 Utils.toggleDisplay(modal, false); 
                 Utils.toggleDisplay(Utils.get('card-edit-modal'), false); 
                 currentCardInModal = null;
                 return; 
             }
-            if (target === arcadeModal || target.id === 'cerrar-game-modal') { Utils.toggleDisplay(arcadeModal, false); Utils.toggleDisplay(Utils.get('diff-selector-container'), false); SnakeGame.stop(); return; }
-            if (target.closest('.open-game-modal-btn')) { e.preventDefault(); Utils.toggleDisplay(arcadeModal, true); Utils.toggleDisplay(Utils.get('diff-selector-container'), true); setTimeout(() => SnakeGame.init(), 100); return; }
+            if (target === arcadeModal || target.id === 'cerrar-game-modal' || target.closest('#cerrar-game-modal')) { Utils.toggleDisplay(arcadeModal, false); Utils.toggleDisplay(Utils.get('diff-selector-container'), false); SnakeGame.stop(); return; }
+            if (target.closest('.open-game-modal-btn')) {
+                e.preventDefault();
+                Utils.toggleDisplay(arcadeModal, true);
+                Utils.toggleDisplay(Utils.get('diff-selector-container'), true);
+                if (window.MobileHistoryManager) MobileHistoryManager.pushModalState('arcade-modal');
+                setTimeout(() => SnakeGame.init(), 100);
+                return;
+            }
             const card = target.closest('.card');
             if (card) { e.preventDefault(); e.stopPropagation(); if (document.body.classList.contains('design-mode')) { CardEditor.open(card); } else { openSongModal(card); } return; }
             if (target === overlay) { overlay.classList.add('hidden'); }
@@ -1789,6 +1802,7 @@ Y tal vez intento darle profundidad a algo que es más simple, pero cuando habla
             if (cardImg && modalImg) modalImg.src = cardImg.src;
 
             Utils.toggleDisplay(modal, true);
+            if (window.MobileHistoryManager) MobileHistoryManager.pushModalState('song-modal');
             MusicPlayer.updateModalPlayState();
         }
 
@@ -2156,10 +2170,11 @@ Y tal vez intento darle profundidad a algo que es más simple, pero cuando habla
             currentTab: 'player'
         };
 
-        function switchTab(tabName) {
+        function switchTab(tabName, pushHistory = true) {
             const validTabs = ['player', 'photos', 'songs', 'letter'];
             if (!validTabs.includes(tabName)) return;
 
+            const prevTab = state.currentTab;
             state.currentTab = tabName;
             document.body.dataset.mobileTab = tabName;
 
@@ -2173,10 +2188,16 @@ Y tal vez intento darle profundidad a algo que es más simple, pero cuando habla
             // Si cambiamos a fotos, canciones o carta, hacer scroll arriba suave
             if (tabName !== 'player') {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
+                document.documentElement.scrollTop = 0;
+                document.body.scrollTop = 0;
             }
 
             if (tabName === 'photos' && window.MobileTimeCounterSlider) {
                 window.MobileTimeCounterSlider.goTo(0, false);
+            }
+
+            if (pushHistory && window.MobileHistoryManager && tabName !== prevTab) {
+                MobileHistoryManager.pushTabState(tabName);
             }
 
             if (navigator.vibrate) navigator.vibrate(10);
@@ -2211,6 +2232,9 @@ Y tal vez intento darle profundidad a algo que es más simple, pero cuando habla
                 setTimeout(() => window.MobileTimeCounterSlider && window.MobileTimeCounterSlider.goTo(2, false), 250);
             } else if (window.location.href.includes('test=library')) {
                 openPlaylistSheet();
+            } else if (window.location.href.includes('test=open_card')) {
+                const card = document.querySelector('.card');
+                if (card) ModalManager.openSongModal(card);
             } else if (window.location.href.includes('test=arruinarlo')) {
                 MusicPlayer.playTrackByTitle("Arruinarlo Todo");
             } else if (window.location.href.includes('test=notitas')) {
@@ -2511,6 +2535,7 @@ Y tal vez intento darle profundidad a algo que es más simple, pero cuando habla
                 renderPlaylistSheet(state.currentFilter || 'all', state.searchQuery || '');
                 sheet.classList.remove('mobile-sheet-hidden');
                 highlightCurrentInSheet();
+                if (window.MobileHistoryManager) MobileHistoryManager.pushModalState('playlist-sheet');
                 if (window.lucide) lucide.createIcons();
             }
             if (navigator.vibrate) navigator.vibrate(10);
@@ -2565,6 +2590,7 @@ Y tal vez intento darle profundidad a algo que es más simple, pero cuando habla
                 }
             }
             sheet.classList.remove('mobile-sheet-hidden');
+            if (window.MobileHistoryManager) MobileHistoryManager.pushModalState('lyrics-sheet');
             if (window.lucide) lucide.createIcons();
         }
 
@@ -2670,8 +2696,112 @@ Y tal vez intento darle profundidad a algo que es más simple, pero cuando habla
     })();
     window.CinnamorollMobilePlayer = CinnamorollMobilePlayer;
 
+    const MobileHistoryManager = (function() {
+        let isHandlingPop = false;
+
+        function pushModalState(modalName) {
+            try {
+                history.pushState({ modal: modalName }, '');
+            } catch(e) {}
+        }
+
+        function pushTabState(tabName) {
+            try {
+                if (tabName !== 'player') {
+                    history.pushState({ tab: tabName }, '');
+                }
+            } catch(e) {}
+        }
+
+        function closeAnyOpenModal() {
+            // 1. Modal de Canción / Polaroid
+            const modal = Utils.get('modal');
+            if (modal && modal.classList.contains('show')) {
+                Utils.toggleDisplay(modal, false);
+                return true;
+            }
+
+            // 2. Modal de Edición
+            const editModal = Utils.get('card-edit-modal');
+            if (editModal && editModal.classList.contains('show')) {
+                Utils.toggleDisplay(editModal, false);
+                return true;
+            }
+
+            // 3. Modal del Minijuego Arcade
+            const arcadeModal = Utils.get('arcade-game-modal');
+            if (arcadeModal && arcadeModal.classList.contains('show')) {
+                Utils.toggleDisplay(arcadeModal, false);
+                Utils.toggleDisplay(Utils.get('diff-selector-container'), false);
+                if (typeof SnakeGame !== 'undefined' && SnakeGame.stop) SnakeGame.stop();
+                return true;
+            }
+
+            // 4. Overlay de Carta
+            const introOverlay = Utils.get('intro-overlay');
+            if (introOverlay && !introOverlay.classList.contains('hidden')) {
+                introOverlay.classList.add('hidden');
+                if (typeof EnvelopeAnimation !== 'undefined' && EnvelopeAnimation.reset) EnvelopeAnimation.reset();
+                return true;
+            }
+
+            // 5. Hoja de Biblioteca de Canciones (Playlist)
+            const plSheet = Utils.get('mobile-playlist-sheet');
+            if (plSheet && !plSheet.classList.contains('mobile-sheet-hidden')) {
+                plSheet.classList.add('mobile-sheet-hidden');
+                return true;
+            }
+
+            // 6. Hoja de Notita / Dedicatoria (Lyrics)
+            const lySheet = Utils.get('mobile-lyrics-sheet');
+            if (lySheet && !lySheet.classList.contains('mobile-sheet-hidden')) {
+                lySheet.classList.add('mobile-sheet-hidden');
+                return true;
+            }
+
+            return false;
+        }
+
+        function init() {
+            try {
+                history.replaceState({ app: 'nuestro-album', tab: 'player' }, '');
+            } catch(e) {}
+
+            window.addEventListener('popstate', () => {
+                isHandlingPop = true;
+
+                // 1. Si hay cualquier modal o panel emergente abierto, cerrarlo
+                const closedModal = closeAnyOpenModal();
+                if (closedModal) {
+                    isHandlingPop = false;
+                    return;
+                }
+
+                // 2. Si no hay modal abierto y estamos en fotos, canciones o carta: volver al reproductor
+                const currentTab = document.body.dataset.mobileTab || 'player';
+                if (currentTab !== 'player') {
+                    if (window.CinnamorollMobilePlayer) {
+                        window.CinnamorollMobilePlayer.switchTab('player', false);
+                    }
+                    isHandlingPop = false;
+                    return;
+                }
+
+                isHandlingPop = false;
+            });
+        }
+
+        return {
+            init,
+            pushModalState,
+            pushTabState
+        };
+    })();
+    window.MobileHistoryManager = MobileHistoryManager;
+
     // --- INICIALIZACIÓN PRINCIPAL ---
     document.addEventListener('DOMContentLoaded', () => {
+        MobileHistoryManager.init();
         TimeCounters.init(); ImageCarousel.init(); CalendarWidget.init(); ParticleSystem.init();
         ModalManager.init(); MusicPlayer.init(); EnvelopeAnimation.init(); DesignTools.init();
         CardEditor.init(); ModalStickerController.init(); CinnamorollMobilePlayer.init();

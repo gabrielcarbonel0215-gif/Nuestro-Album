@@ -23,7 +23,7 @@
 
 * { box-sizing: border-box; }
 html, body {
-    overscroll-behavior-y: none;
+    overscroll-behavior-x: none;
     -webkit-tap-highlight-color: transparent;
 }
 body.no-scroll { overflow: hidden; }
@@ -623,7 +623,7 @@ body.design-mode .card:hover { border-color: #ff4d6d !important; cursor: alias !
 }
 
 /* 9-State System Mapping */
-.door-overlay[data-state="1"] { display: block; background-image: url('imagenes/animaciones/puertas/Door_1.png'); }
+.door-overlay[data-state="1"] { display: block; background-image: url('imagenes/animaciones/puertas/door_1.png'); }
 .door-overlay[data-state="2"] { display: block; background-image: url('imagenes/animaciones/puertas/door_2.png'); }
 .door-overlay[data-state="3"] { display: block; background-image: url('imagenes/animaciones/puertas/door_3.png'); }
 .door-overlay[data-state="4"] { display: block; background-image: url('imagenes/animaciones/puertas/door_4.png'); }
@@ -631,7 +631,7 @@ body.design-mode .card:hover { border-color: #ff4d6d !important; cursor: alias !
 .door-overlay[data-state="6"] { display: block; background-image: url('imagenes/animaciones/puertas/door_6.png'); }
 .door-overlay[data-state="7"] { display: block; background-image: url('imagenes/animaciones/puertas/door_7.png'); }
 .door-overlay[data-state="8"] { display: block; background-image: url('imagenes/animaciones/puertas/door_8.png'); }
-.door-overlay[data-state="9"] { display: block; background-image: url('imagenes/animaciones/puertas/Door_9.png'); }
+.door-overlay[data-state="9"] { display: block; background-image: url('imagenes/animaciones/puertas/door_9.png'); }
 
 .calendar-game-block { display: flex; flex-direction: row; gap: 15px; align-items: center; flex-shrink: 0; }
 #game-icon-image { width: 80px; height: 80px; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.2); transition: transform 0.3s ease; display: block; }
@@ -1306,10 +1306,42 @@ body.playlist-debug-mode #playlist-container {
 }
 
 @media (max-width: 768px) {
-    html, body {
+    html {
         overflow-x: hidden !important;
         width: 100% !important;
         max-width: 100% !important;
+        overscroll-behavior-x: none !important;
+    }
+    body {
+        overflow-x: hidden !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        overscroll-behavior-x: none !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+    body[data-mobile-tab="player"],
+    body:not([data-mobile-tab]) {
+        overflow: hidden !important;
+        height: 100dvh !important;
+        max-height: 100dvh !important;
+        position: fixed !important;
+        width: 100% !important;
+    }
+    body[data-mobile-tab="photos"],
+    body[data-mobile-tab="songs"] {
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        position: relative !important;
+        height: auto !important;
+        min-height: 100dvh !important;
+        touch-action: pan-y !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+    body[data-mobile-tab="letter"] {
+        overflow: hidden !important;
+        height: 100dvh !important;
+        position: fixed !important;
+        width: 100% !important;
     }
     .modal:not(.show) {
         display: none !important;
@@ -1497,32 +1529,52 @@ body.playlist-debug-mode #playlist-container {
     }
     body[data-mobile-tab="photos"] .carousel-container {
         width: calc(100% - 24px) !important;
-        max-width: 345px !important;
+        max-width: 350px !important;
         min-width: unset !important;
         margin: 0 auto !important;
-        height: 235px !important;
+        height: 220px !important;
         box-sizing: border-box !important;
         position: relative !important;
         border-radius: 16px !important;
+        overflow: hidden !important;
+        touch-action: pan-y !important;
     }
-    body[data-mobile-tab="photos"] .carousel-bg-layer,
     body[data-mobile-tab="photos"] .door-overlay {
         position: absolute !important;
         top: 50% !important;
         left: 50% !important;
-        width: 100% !important;
-        height: 100% !important;
-        transform: translate(-50%, -50%) !important;
+        width: 115% !important;
+        height: 115% !important;
+        transform: translate(-50%, -50%) translate(-1px, -10px) !important;
         background-size: 100% 100% !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
         border-radius: 16px !important;
+        pointer-events: none !important;
+        z-index: 50 !important;
+    }
+    body[data-mobile-tab="photos"] .carousel-bg-layer {
+        position: absolute !important;
+        top: 50% !important;
+        left: 50% !important;
+        width: 115% !important;
+        height: 115% !important;
+        transform: translate(-50%, -50%) translate(-1px, -10px) !important;
+        background-size: 100% 100% !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        border-radius: 16px !important;
+        pointer-events: none !important;
+        z-index: 0 !important;
     }
     body[data-mobile-tab="photos"] .slide-group {
         position: absolute !important;
-        top: 10px !important;
-        left: 10px !important;
-        width: calc(100% - 20px) !important;
-        height: calc(100% - 20px) !important;
-        gap: 8px !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) translate(0, -6px) !important;
+        width: 90% !important;
+        height: 76% !important;
+        gap: 6px !important;
         display: flex !important;
         justify-content: center !important;
         align-items: center !important;
@@ -1530,11 +1582,11 @@ body.playlist-debug-mode #playlist-container {
         padding: 0 !important;
     }
     body[data-mobile-tab="photos"] .slide-photo {
-        width: calc(50% - 4px) !important;
+        width: calc(50% - 3px) !important;
         height: 100% !important;
         object-fit: cover !important;
-        border-radius: 8px !important;
-        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3) !important;
+        border-radius: 6px !important;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25) !important;
     }
     body[data-mobile-tab="photos"] .carousel-indicators {
         margin-top: 8px !important;
@@ -2761,6 +2813,131 @@ body.playlist-debug-mode #playlist-container {
     .mobile-pl-play-icon {
         color: #cbd5e1;
         flex-shrink: 0;
+    }
+
+    /* -----------------------------------------------------------
+       6. Modal de Canciones / Polaroids Adaptado a Pantallas Móviles
+       ----------------------------------------------------------- */
+    .modal-sticker-container {
+        display: none !important;
+    }
+    .modal.show {
+        display: flex !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
+    }
+    #modal {
+        z-index: 10050 !important;
+        padding: 16px !important;
+        box-sizing: border-box !important;
+        backdrop-filter: blur(12px) !important;
+        -webkit-backdrop-filter: blur(12px) !important;
+        background: rgba(15, 23, 42, 0.72) !important;
+    }
+    #modal #main-modal-content {
+        width: calc(100% - 16px) !important;
+        max-width: 350px !important;
+        height: auto !important;
+        max-height: 84dvh !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        padding: 20px 16px 18px 16px !important;
+        border-radius: 24px !important;
+        background: rgba(255, 255, 255, 0.98) !important;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.9) inset !important;
+        overflow-y: auto !important;
+        position: relative !important;
+        box-sizing: border-box !important;
+        transform: none !important;
+    }
+    #modal #close-modal-btn {
+        position: absolute !important;
+        top: 12px !important;
+        right: 12px !important;
+        width: 38px !important;
+        height: 38px !important;
+        border-radius: 50% !important;
+        background: #f1f5f9 !important;
+        color: #475569 !important;
+        border: 1px solid rgba(0, 0, 0, 0.08) !important;
+        font-size: 24px !important;
+        font-weight: 700 !important;
+        line-height: 1 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        cursor: pointer !important;
+        z-index: 100 !important;
+        transition: transform 0.15s, background-color 0.15s !important;
+        padding: 0 !important;
+    }
+    #modal #close-modal-btn:active {
+        transform: scale(0.92) !important;
+        background: #e2e8f0 !important;
+    }
+    #modal #modal-image-wrapper {
+        width: 140px !important;
+        height: 140px !important;
+        border-radius: 18px !important;
+        margin: 4px auto 12px auto !important;
+        flex-shrink: 0 !important;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16) !important;
+        overflow: hidden !important;
+    }
+    #modal #modal-image-wrapper img {
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: cover !important;
+        border-radius: 18px !important;
+    }
+    #modal .modal-text {
+        width: 100% !important;
+        padding-left: 0 !important;
+        text-align: center !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        overflow: visible !important;
+    }
+    #modal .modal-text-header {
+        text-align: center !important;
+        align-items: center !important;
+        padding-bottom: 8px !important;
+        margin-bottom: 8px !important;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+        width: 100% !important;
+    }
+    #modal #modal-title {
+        font-size: 17.5px !important;
+        font-weight: 800 !important;
+        color: #0f172a !important;
+        margin: 0 !important;
+        line-height: 1.2 !important;
+    }
+    #modal #modal-subtitle {
+        font-size: 12.5px !important;
+        color: #64748b !important;
+        font-weight: 600 !important;
+        margin-top: 3px !important;
+    }
+    #modal .modal-desc-scroll {
+        width: 100% !important;
+        max-height: 220px !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        padding: 4px 6px !important;
+        box-sizing: border-box !important;
+    }
+    #modal #modal-desc {
+        font-size: 13.5px !important;
+        line-height: 1.6 !important;
+        color: #334155 !important;
+        text-align: left !important;
+        font-family: 'Quicksand', 'Inter', sans-serif !important;
+    }
+    #modal #modal-desc p {
+        margin: 0 0 10px 0 !important;
     }
 }
 

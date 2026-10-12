@@ -8,6 +8,11 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Quicksand:wght@500;600;700;800&display=swap" rel="stylesheet">
     
+    <!-- Preload de imágenes críticas para móvil -->
+    <link rel="preload" as="image" href="imagenes/animaciones/sobre/sobre_cerrado.png">
+    <link rel="preload" as="image" href="imagenes/animaciones/sobre/sobre_medio.png">
+    <link rel="preload" as="image" href="imagenes/animaciones/sobre/sobre_abierto.png">
+    
 <link rel="stylesheet" href="estilos.css">
 </head>
 <body data-mobile-tab="player">
@@ -395,13 +400,14 @@
 <p>Pensaba darte esto hace muchísimo tiempo, y realmente agradezco mucho que no pasó, ya que no hubiera tenido la oportunidad de incluir imágenes juntos. No obstante, antes de "conocernos", para mí esto ya era muy real: tú me tenías cautivado. Con un simple mensaje en el cual demostraras tu esencia, yo estaba enamorado. Pero tenerte a mi lado es como un sueño, tú eres increíble y quiero estar a tu lado toda mi vida para yo también ser increíble. Te admiro muchísimo y me encanta la persona que eres, y la inteligencia enorme que posees. Quizás soy "sapiofílico", me gusta cachar sapos, jaja. Te amo demasiado Keyla.</p>
         </div>
         <button id="mobile-hero-envelope-btn" class="interactable" aria-label="Abrir carta">
-            <img src="imagenes/animaciones/Sobre/sobre_cerrado.png" alt="Sobre de carta">
+            <img src="imagenes/animaciones/sobre/sobre_cerrado.png" alt="Sobre de carta">
         </button>
     </div>
 </div>
 
 <div class="modal" id="modal">
     <div class="modal-content" id="main-modal-content">
+        <button class="cerrar modal-close-btn" id="close-modal-btn" aria-label="Cerrar modal">×</button>
         
         <!-- Stickers AGREGADOS: 4 Stickers Independientes ACTUALIZADOS -->
         <div id="modal-sticker-1" class="modal-sticker-container" style="bottom: -118px; right: -157px; width: 406px; height: 309px;">
