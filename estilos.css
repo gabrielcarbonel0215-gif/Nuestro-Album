@@ -602,13 +602,13 @@ body.design-mode .card:hover { border-color: #ff4d6d !important; cursor: alias !
 
 /* 9-State System Mapping */
 .door-overlay[data-state="1"] { display: block; background-image: url('imagenes/animaciones/puertas/Door_1.png'); }
-.door-overlay[data-state="2"] { display: block; background-image: url('imagenes/animaciones/puertas/Door_2.png'); }
-.door-overlay[data-state="3"] { display: block; background-image: url('imagenes/animaciones/puertas/Door_3.png'); }
-.door-overlay[data-state="4"] { display: block; background-image: url('imagenes/animaciones/puertas/Door_4.png'); }
-.door-overlay[data-state="5"] { display: block; background-image: url('imagenes/animaciones/puertas/Door_5.png'); }
-.door-overlay[data-state="6"] { display: block; background-image: url('imagenes/animaciones/puertas/Door_6.png'); }
-.door-overlay[data-state="7"] { display: block; background-image: url('imagenes/animaciones/puertas/Door_7.png'); }
-.door-overlay[data-state="8"] { display: block; background-image: url('imagenes/animaciones/puertas/Door_8.png'); }
+.door-overlay[data-state="2"] { display: block; background-image: url('imagenes/animaciones/puertas/door_2.png'); }
+.door-overlay[data-state="3"] { display: block; background-image: url('imagenes/animaciones/puertas/door_3.png'); }
+.door-overlay[data-state="4"] { display: block; background-image: url('imagenes/animaciones/puertas/door_4.png'); }
+.door-overlay[data-state="5"] { display: block; background-image: url('imagenes/animaciones/puertas/door_5.png'); }
+.door-overlay[data-state="6"] { display: block; background-image: url('imagenes/animaciones/puertas/door_6.png'); }
+.door-overlay[data-state="7"] { display: block; background-image: url('imagenes/animaciones/puertas/door_7.png'); }
+.door-overlay[data-state="8"] { display: block; background-image: url('imagenes/animaciones/puertas/door_8.png'); }
 .door-overlay[data-state="9"] { display: block; background-image: url('imagenes/animaciones/puertas/Door_9.png'); }
 
 .calendar-game-block { display: flex; flex-direction: row; gap: 15px; align-items: center; flex-shrink: 0; }
