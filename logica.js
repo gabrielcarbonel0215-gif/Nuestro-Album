@@ -1566,18 +1566,18 @@ Y tal vez intento darle profundidad a algo que es más simple, pero cuando habla
 
             const mobScore = Utils.get('mobile-snake-score');
             const mobBest = Utils.get('mobile-snake-best');
-            const mobStatus = Utils.get('mobile-snake-status');
+            const mobStatusText = Utils.get('mobile-snake-status-text') || Utils.get('mobile-snake-status');
             if (mobScore) mobScore.textContent = state.score;
             if (mobBest) mobBest.textContent = state.highScore;
-            if (mobStatus) {
+            if (mobStatusText) {
                 if (statusMsg) {
-                    mobStatus.textContent = statusMsg;
+                    mobStatusText.textContent = statusMsg;
                 } else if (performance.now() < state.feverUntil) {
-                    mobStatus.textContent = '✨ ¡Fiebre x2!';
+                    mobStatusText.textContent = '¡Fiebre Canela x2!';
                 } else if (state.combo > 1) {
-                    mobStatus.textContent = `🔥 Combo x${state.combo}!`;
+                    mobStatusText.textContent = `¡Combo x${state.combo}!`;
                 } else {
-                    mobStatus.textContent = '☁️ ¡Atrapa dulces!';
+                    mobStatusText.textContent = '¡Estrella Mágica!';
                 }
             }
         }
@@ -1623,9 +1623,9 @@ Y tal vez intento darle profundidad a algo que es más simple, pero cuando habla
             ctx = canvas.getContext('2d');
 
             if (isMobile()) {
-                state.gridW = 20;
-                state.gridH = 18;
-                state.tileSize = 28;
+                state.gridW = 16;
+                state.gridH = 12;
+                state.tileSize = 32;
             } else {
                 state.gridW = AppConfig.GAME.GRID_W;
                 state.gridH = AppConfig.GAME.GRID_H;
@@ -1637,26 +1637,46 @@ Y tal vez intento darle profundidad a algo que es más simple, pero cuando habla
             resetState();
             spawnFood();
             setupControls();
-            updateHUD('☁️ ¡Atrapa dulces!');
+            updateHUD('¡Estrella Mágica!');
+            if (window.location.href.includes('test=snake_clone')) {
+                state.snake = [
+                    { x: 10, y: 2 },
+                    { x: 11, y: 2 },
+                    { x: 11, y: 3 },
+                    { x: 11, y: 4 },
+                    { x: 11, y: 5 },
+                    { x: 11, y: 6 },
+                    { x: 11, y: 7 },
+                    { x: 11, y: 8 }
+                ];
+                state.dir = { x: -1, y: 0 };
+                state.food = { x: 9, y: 3 };
+                state.score = 245;
+                state.highScore = 245;
+                state.beat = 0;
+                updateHUD('¡Estrella Mágica!');
+                draw();
+                return;
+            }
             if (window.location.href.includes('test=snake_action')) {
                 state.snake = [
-                    { x: 11, y: 8 },
-                    { x: 10, y: 8 },
-                    { x: 9, y: 8 },
-                    { x: 8, y: 8 },
-                    { x: 8, y: 9 },
-                    { x: 8, y: 10 },
-                    { x: 7, y: 10 }
+                    { x: 9, y: 5 },
+                    { x: 8, y: 5 },
+                    { x: 7, y: 5 },
+                    { x: 6, y: 5 },
+                    { x: 6, y: 6 },
+                    { x: 6, y: 7 },
+                    { x: 5, y: 7 }
                 ];
-                state.food = { x: 13, y: 8 };
-                state.bonusFood = { x: 11, y: 5, type: 'roll', spawnTime: performance.now() - 1200, duration: 6500 };
-                state.score = 75;
-                state.highScore = 120;
+                state.food = { x: 11, y: 5 };
+                state.bonusFood = { x: 9, y: 3, type: 'roll', spawnTime: performance.now() - 1200, duration: 6500 };
+                state.score = 245;
+                state.highScore = 245;
                 state.combo = 3;
                 state.lastEatTime = performance.now();
-                spawnParticles(10, 8, ['#ff4d6d', '#ff8fa3', '#38bdf8', '#f59e0b'], 12);
-                spawnFloatingText(10, 7, '+20 x3 🔥', '#e11d48');
-                updateHUD('🔥 Combo x3!');
+                spawnParticles(8, 5, ['#ff4d6d', '#ff8fa3', '#38bdf8', '#f59e0b'], 12);
+                spawnFloatingText(8, 4, '+20 x3 🔥', '#e11d48');
+                updateHUD('¡Estrella Mágica!');
             }
             loopId = requestAnimationFrame(gameLoop);
         }
@@ -1888,7 +1908,7 @@ Y tal vez intento darle profundidad a algo que es más simple, pero cuando habla
                 }
 
                 state.bonusFood = null;
-                updateHUD(isRoll ? '✨ ¡Fiebre Canela x2!' : '🌟 ¡Estrella Mágica!');
+                updateHUD(isRoll ? '¡Fiebre Canela x2!' : '¡Estrella Mágica!');
             }
 
             // ¿Comió el corazón clásico?
@@ -1937,12 +1957,15 @@ Y tal vez intento darle profundidad a algo que es más simple, pero cuando habla
             const ts = state.tileSize;
             const now = performance.now();
             const isFever = now < state.feverUntil;
+            const mobile = isMobile();
 
             // Cuadrícula en tablero pastel alternado
             for (let c = 0; c < state.gridW; c++) {
                 for (let r = 0; r < state.gridH; r++) {
                     if (isFever) {
                         ctx.fillStyle = (c + r) % 2 === 0 ? '#fffbeb' : '#fef3c7';
+                    } else if (mobile) {
+                        ctx.fillStyle = (c + r) % 2 === 0 ? '#f8fcff' : '#e6f3fc';
                     } else {
                         ctx.fillStyle = (c + r) % 2 === 0 ? '#f6fbfd' : '#eaf4fa';
                     }
@@ -1951,7 +1974,7 @@ Y tal vez intento darle profundidad a algo que es más simple, pero cuando habla
             }
             
             // Líneas divisorias suaves
-            ctx.strokeStyle = isFever ? 'rgba(217, 119, 6, 0.12)' : 'rgba(70, 130, 180, 0.12)';
+            ctx.strokeStyle = isFever ? 'rgba(217, 119, 6, 0.14)' : (mobile ? 'rgba(110, 172, 226, 0.25)' : 'rgba(70, 130, 180, 0.12)');
             ctx.lineWidth = 1;
             for (let i = 0; i <= canvas.width; i += ts) {
                 ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
@@ -1961,84 +1984,125 @@ Y tal vez intento darle profundidad a algo que es más simple, pero cuando habla
             }
             
             // Sombra suave para la serpiente
-            ctx.shadowBlur = 6;
-            ctx.shadowColor = isFever ? 'rgba(245, 158, 11, 0.35)' : 'rgba(3, 105, 161, 0.25)';
+            ctx.shadowBlur = mobile ? 4 : 6;
+            ctx.shadowColor = isFever ? 'rgba(245, 158, 11, 0.35)' : 'rgba(30, 100, 175, 0.22)';
 
-            const headSeg = state.snake[0];
-            const distToFood = headSeg ? (Math.abs(headSeg.x - state.food.x) + Math.abs(headSeg.y - state.food.y)) : 99;
-            const distToBonus = (headSeg && state.bonusFood) ? (Math.abs(headSeg.x - state.bonusFood.x) + Math.abs(headSeg.y - state.bonusFood.y)) : 99;
-            const nearTreat = Math.min(distToFood, distToBonus) <= 2;
-            
             state.snake.forEach((seg, i) => {
                 const x = seg.x * ts + 1;
                 const y = seg.y * ts + 1;
                 const s = ts - 2;
                 
                 if (i === 0) {
-                    // Cabeza Cinnamoroll: blanca con bordes celestes y carita expresiva
+                    // Cabeza Cinnamoroll: blanca con borde celeste, ojitos ovalados, mejillas rosadas y boquita tierna
                     ctx.fillStyle = '#ffffff';
                     ctx.fillRect(x, y, s, s);
                     
                     ctx.shadowBlur = 0;
-                    ctx.strokeStyle = isFever ? '#f59e0b' : '#38bdf8';
-                    ctx.lineWidth = 1.8;
+                    ctx.strokeStyle = isFever ? '#f59e0b' : '#3a8ee6';
+                    ctx.lineWidth = mobile ? 2 : 1.8;
                     ctx.strokeRect(x, y, s, s);
                     
-                    // Ojitos tiernos mirando ligeramente hacia la dirección de avance
-                    const lookX = state.dir.x * 1.5;
-                    const lookY = state.dir.y * 1.2;
-                    const eyeY = y + s * 0.36 + lookY;
-                    const leftEyeX = x + s * 0.28 + lookX;
-                    const rightEyeX = x + s * 0.72 + lookX;
-                    const eyeR = Math.max(2, s * 0.11);
+                    const eyeY = y + s * 0.44;
+                    const leftEyeX = x + s * 0.30;
+                    const rightEyeX = x + s * 0.70;
+                    const eyeRx = Math.max(2, s * 0.085);
+                    const eyeRy = Math.max(2.5, s * 0.12);
 
-                    ctx.fillStyle = '#0f172a';
-                    ctx.beginPath(); ctx.arc(leftEyeX, eyeY, eyeR, 0, Math.PI * 2); ctx.fill();
-                    ctx.beginPath(); ctx.arc(rightEyeX, eyeY, eyeR, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#17253b';
+                    ctx.beginPath();
+                    ctx.ellipse(leftEyeX, eyeY, eyeRx, eyeRy, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.ellipse(rightEyeX, eyeY, eyeRx, eyeRy, 0, 0, Math.PI * 2);
+                    ctx.fill();
                     
                     // Rubor en mejillas
-                    ctx.fillStyle = 'rgba(255, 130, 170, 0.72)';
-                    ctx.beginPath(); ctx.arc(x + s * 0.18, y + s * 0.62, eyeR * 1.05, 0, Math.PI * 2); ctx.fill();
-                    ctx.beginPath(); ctx.arc(x + s * 0.82, y + s * 0.62, eyeR * 1.05, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#ff86a2';
+                    const cheekRx = Math.max(2.5, s * 0.13);
+                    const cheekRy = Math.max(1.8, s * 0.085);
+                    ctx.beginPath();
+                    ctx.ellipse(x + s * 0.18, y + s * 0.62, cheekRx, cheekRy, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.ellipse(x + s * 0.82, y + s * 0.62, cheekRx, cheekRy, 0, 0, Math.PI * 2);
+                    ctx.fill();
 
-                    // Boquita (:O cuando está cerca de un dulce, o sonrisa tierna)
-                    if (nearTreat) {
-                        ctx.fillStyle = '#fb7185';
-                        ctx.beginPath();
-                        ctx.arc(x + s * 0.5 + lookX * 0.5, y + s * 0.66 + lookY * 0.5, Math.max(2, s * 0.12), 0, Math.PI * 2);
-                        ctx.fill();
-                    }
+                    // Sonrisita tierna en el centro
+                    ctx.strokeStyle = '#17253b';
+                    ctx.lineWidth = 1.6;
+                    ctx.lineCap = 'round';
+                    ctx.beginPath();
+                    ctx.arc(x + s * 0.50, y + s * 0.58, s * 0.08, 0.15 * Math.PI, 0.85 * Math.PI);
+                    ctx.stroke();
                     
-                    ctx.shadowBlur = 6;
+                    ctx.shadowBlur = mobile ? 4 : 6;
                 } else {
-                    // Cuerpo: celeste cielo pastel vibrante (o dorado rosado en modo Fiebre)
+                    // Bloques del cuerpo con bisel 3D brillante idéntico a la consola Cinnamoroll Pocket
                     if (isFever) {
                         ctx.fillStyle = i % 2 === 0 ? '#fde047' : '#f472b6';
                         ctx.strokeStyle = '#d97706';
                     } else {
-                        ctx.fillStyle = i % 2 === 0 ? '#7dd3fc' : '#38bdf8';
-                        ctx.strokeStyle = '#0284c7';
+                        ctx.fillStyle = '#5bb5f9';
+                        ctx.strokeStyle = '#2678cf';
                     }
                     ctx.fillRect(x, y, s, s);
-                    ctx.lineWidth = 1;
+
+                    // Brillo superior/izquierdo (bisel 3D)
+                    ctx.shadowBlur = 0;
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.42)';
+                    ctx.fillRect(x + 1, y + 1, s - 2, 3);
+                    ctx.fillRect(x + 1, y + 1, 3, s - 2);
+
+                    // Sombra interna inferior/derecha (bisel 3D)
+                    ctx.fillStyle = 'rgba(20, 90, 165, 0.22)';
+                    ctx.fillRect(x + 1, y + s - 4, s - 2, 3);
+                    ctx.fillRect(x + s - 4, y + 1, 3, s - 2);
+
+                    ctx.lineWidth = mobile ? 1.8 : 1.2;
                     ctx.strokeRect(x, y, s, s);
+                    ctx.shadowBlur = mobile ? 4 : 6;
                 }
             });
             
-            // Comida clásica (Corazón palpitante)
+            // Comida clásica (Corazón brillante con destellos dorados)
             state.beat += 0.2;
-            const scale = 1 + Math.sin(state.beat) * 0.15;
-            const cx = state.food.x * ts + ts / 2;
-            const cy = state.food.y * ts + ts / 2;
+            const isCloneSnapshot = window.location.href.includes('test=snake_clone');
+            const scale = isCloneSnapshot ? 1 : (1 + Math.sin(state.beat) * 0.12);
+            const fx = state.food.x * ts;
+            const fy = state.food.y * ts;
+            const cx = fx + ts / 2;
+            const cy = fy + ts / 2;
             
             ctx.save();
+            // Rayitos dorados de brillo a la izquierda del corazón en móvil (clon 1:1)
+            if (mobile) {
+                ctx.shadowBlur = 0;
+                ctx.strokeStyle = '#f59e0b';
+                ctx.lineWidth = 2.4;
+                ctx.lineCap = 'round';
+                // Rayo superior izquierdo
+                ctx.beginPath();
+                ctx.moveTo(fx - 2, fy + ts * 0.24);
+                ctx.lineTo(fx - 8, fy + ts * 0.08);
+                ctx.stroke();
+                // Rayo central izquierdo
+                ctx.beginPath();
+                ctx.moveTo(fx - 4, fy + ts * 0.50);
+                ctx.lineTo(fx - 11, fy + ts * 0.50);
+                ctx.stroke();
+                // Rayo inferior izquierdo
+                ctx.beginPath();
+                ctx.moveTo(fx - 2, fy + ts * 0.74);
+                ctx.lineTo(fx - 8, fy + ts * 0.90);
+                ctx.stroke();
+            }
+
             ctx.translate(cx, cy);
             ctx.scale(scale, scale);
             ctx.translate(-cx, -cy);
-            ctx.shadowBlur = 12;
-            ctx.shadowColor = 'rgba(255, 77, 109, 0.45)';
-            ctx.fillStyle = '#ff4d6d';
-            drawHeart(state.food.x * ts, state.food.y * ts + 2, ts);
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = 'rgba(255, 77, 109, 0.38)';
+            drawHeart(fx, fy + 2, ts);
             ctx.restore();
 
             // Bonus Food (Rollo de Canela 🍥 o Estrella ⭐ con anillo de tiempo)
@@ -2050,7 +2114,6 @@ Y tal vez intento darle profundidad a algo que es más simple, pero cuando habla
                 const bScale = 1 + Math.cos(state.beat * 1.4) * 0.14;
 
                 ctx.save();
-                // Anillo de cuenta regresiva
                 ctx.beginPath();
                 ctx.arc(bcx, bcy, ts * 0.56, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * progress);
                 ctx.strokeStyle = state.bonusFood.type === 'roll' ? '#f59e0b' : '#ec4899';
@@ -2097,7 +2160,7 @@ Y tal vez intento darle profundidad a algo que es más simple, pero cuando habla
                 }
                 ctx.save();
                 ctx.globalAlpha = ft.alpha;
-                ctx.font = `800 ${isMobile() ? 16 : 14}px "Nunito", "Segoe UI", sans-serif`;
+                ctx.font = `800 ${mobile ? 16 : 14}px "Nunito", "Segoe UI", sans-serif`;
                 ctx.fillStyle = ft.color;
                 ctx.textAlign = 'center';
                 ctx.fillText(ft.text, ft.x, ft.y);
@@ -2106,14 +2169,30 @@ Y tal vez intento darle profundidad a algo que es más simple, pero cuando habla
         }
 
         function drawHeart(x, y, size) {
+            const w = size * 0.88;
+            const h = size * 0.82;
+            const ox = x + (size - w) / 2;
+            const oy = y + (size - h) / 2 - 1;
+
             ctx.beginPath();
-            ctx.moveTo(x, y + size / 4);
-            ctx.quadraticCurveTo(x, y, x + size / 4, y);
-            ctx.quadraticCurveTo(x + size / 2, y, x + size / 4, y + size / 4);
-            ctx.quadraticCurveTo(x + size / 2, y, x + size * 3/4, y);
-            ctx.quadraticCurveTo(x + size, y, x + size, y + size / 4);
-            ctx.quadraticCurveTo(x + size, y + size / 2, x + size / 2, y + size * 3/4);
-            ctx.quadraticCurveTo(x, y + size / 2, x, y + size / 4);
+            ctx.moveTo(ox + w / 2, oy + h * 0.26);
+            ctx.bezierCurveTo(ox + w / 2, oy + h * 0.06, ox + w * 0.12, oy + h * 0.02, ox + w * 0.06, oy + h * 0.34);
+            ctx.bezierCurveTo(ox, oy + h * 0.62, ox + w * 0.35, oy + h * 0.80, ox + w / 2, oy + h * 0.96);
+            ctx.bezierCurveTo(ox + w * 0.65, oy + h * 0.80, ox + w, oy + h * 0.62, ox + w * 0.94, oy + h * 0.34);
+            ctx.bezierCurveTo(ox + w * 0.88, oy + h * 0.02, ox + w / 2, oy + h * 0.06, ox + w / 2, oy + h * 0.26);
+            ctx.closePath();
+
+            ctx.fillStyle = '#ff5a79';
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.lineWidth = 1.8;
+            ctx.strokeStyle = '#c83756';
+            ctx.stroke();
+
+            // Brillo especular blanco arriba a la izquierda
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.78)';
+            ctx.beginPath();
+            ctx.ellipse(ox + w * 0.27, oy + h * 0.28, w * 0.09, h * 0.06, -0.5, 0, Math.PI * 2);
             ctx.fill();
         }
 
