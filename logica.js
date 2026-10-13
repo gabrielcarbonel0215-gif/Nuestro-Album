@@ -1466,7 +1466,34 @@ Y tal vez intento darle profundidad a algo que es más simple, pero cuando habla
 
         const SnakeGame = (function() {
         let canvas, ctx, loopId;
-        const state = { active: false, gameOver: false, speed: AppConfig.GAME.DEFAULT_SPEED, snake: [], food: { x: 0, y: 0 }, dir: { x: 1, y: 0 }, nextDir: { x: 1, y: 0 }, score: 0, lastTime: 0, beat: 0, highScore: localStorage.getItem('snakeHighScore') || 0 };
+        let dpadBound = false;
+        const isMobile = () => window.innerWidth <= 768;
+
+        const state = {
+            active: false,
+            gameOver: false,
+            difficulty: 'normal',
+            speed: AppConfig.GAME.DEFAULT_SPEED,
+            gridW: AppConfig.GAME.GRID_W,
+            gridH: AppConfig.GAME.GRID_H,
+            tileSize: AppConfig.GAME.TILE_SIZE,
+            snake: [],
+            food: { x: 0, y: 0 },
+            bonusFood: null, // { x, y, type: 'roll'|'star', spawnTime, duration }
+            dir: { x: 1, y: 0 },
+            dirQueue: [],
+            score: 0,
+            combo: 1,
+            lastEatTime: 0,
+            feverUntil: 0,
+            heartsEaten: 0,
+            newRecord: false,
+            particles: [],
+            floatingTexts: [],
+            lastTime: 0,
+            beat: 0,
+            highScore: parseInt(localStorage.getItem('snakeHighScore') || '0', 10)
+        };
         
         let audioCtx = null;
         function playSound(type) {
@@ -1479,11 +1506,20 @@ Y tal vez intento darle profundidad a algo que es más simple, pero cuando habla
                 
                 if (type === 'eat') {
                     osc.type = 'sine';
-                    osc.frequency.setValueAtTime(400, audioCtx.currentTime);
-                    osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.1);
+                    const baseFreq = Math.min(400 + (state.combo - 1) * 60, 700);
+                    osc.frequency.setValueAtTime(baseFreq, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.9, audioCtx.currentTime + 0.11);
                     gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-                    osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.11);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.11);
+                } else if (type === 'bonus') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+                    osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.06);
+                    osc.frequency.exponentialRampToValueAtTime(1046.5, audioCtx.currentTime + 0.22);
+                    gain.gain.setValueAtTime(0.14, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.22);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.22);
                 } else if (type === 'die') {
                     osc.type = 'sawtooth';
                     osc.frequency.setValueAtTime(150, audioCtx.currentTime);
@@ -1493,20 +1529,20 @@ Y tal vez intento darle profundidad a algo que es más simple, pero cuando habla
                     osc.start(); osc.stop(audioCtx.currentTime + 0.3);
                 } else if (type === 'diff-normal') {
                     osc.type = 'sine';
-                    osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5 (dulce y celestial)
+                    osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
                     gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
                     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.18);
                     osc.start(); osc.stop(audioCtx.currentTime + 0.18);
                 } else if (type === 'diff-hard') {
                     osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(659.25, audioCtx.currentTime); // E5 -> A5 (eléctrico)
+                    osc.frequency.setValueAtTime(659.25, audioCtx.currentTime);
                     osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.12);
                     gain.gain.setValueAtTime(0.14, audioCtx.currentTime);
                     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
                     osc.start(); osc.stop(audioCtx.currentTime + 0.2);
                 } else if (type === 'diff-expert') {
                     osc.type = 'sawtooth';
-                    osc.frequency.setValueAtTime(350, audioCtx.currentTime); // Fuego / Alerta
+                    osc.frequency.setValueAtTime(350, audioCtx.currentTime);
                     osc.frequency.exponentialRampToValueAtTime(1046.5, audioCtx.currentTime + 0.2);
                     gain.gain.setValueAtTime(0.16, audioCtx.currentTime);
                     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
@@ -1515,77 +1551,407 @@ Y tal vez intento darle profundidad a algo que es más simple, pero cuando habla
             } catch(e) {}
         }
 
-        function init() {
-            stop(); canvas = Utils.get('arcade-game-canvas'); if (!canvas) return;
-            const newCanvas = canvas.cloneNode(true); canvas.parentNode.replaceChild(newCanvas, canvas); canvas = newCanvas; ctx = canvas.getContext('2d');
-            resetState(); spawnFood(); setupControls();
-            Utils.get('score-display').textContent = 'Puntos: 0 | Mejor: ' + state.highScore; loopId = requestAnimationFrame(gameLoop);
+        function queueDirection(nx, ny) {
+            const lastDir = state.dirQueue.length > 0 ? state.dirQueue[state.dirQueue.length - 1] : state.dir;
+            // Evitar giro de 180 grados o duplicar la misma dirección
+            if ((nx !== 0 && lastDir.x !== 0) || (ny !== 0 && lastDir.y !== 0)) return;
+            if (state.dirQueue.length < 2) {
+                state.dirQueue.push({ x: nx, y: ny });
+            }
         }
+
+        function updateHUD(statusMsg) {
+            const scoreEl = Utils.get('score-display');
+            if (scoreEl) scoreEl.textContent = 'Puntos: ' + state.score + ' | Mejor: ' + state.highScore;
+
+            const mobScore = Utils.get('mobile-snake-score');
+            const mobBest = Utils.get('mobile-snake-best');
+            const mobStatus = Utils.get('mobile-snake-status');
+            if (mobScore) mobScore.textContent = state.score;
+            if (mobBest) mobBest.textContent = state.highScore;
+            if (mobStatus) {
+                if (statusMsg) {
+                    mobStatus.textContent = statusMsg;
+                } else if (performance.now() < state.feverUntil) {
+                    mobStatus.textContent = '✨ ¡Fiebre x2!';
+                } else if (state.combo > 1) {
+                    mobStatus.textContent = `🔥 Combo x${state.combo}!`;
+                } else {
+                    mobStatus.textContent = '☁️ ¡Atrapa dulces!';
+                }
+            }
+        }
+
+        function spawnParticles(gx, gy, colors, count = 10) {
+            const cx = gx * state.tileSize + state.tileSize / 2;
+            const cy = gy * state.tileSize + state.tileSize / 2;
+            for (let i = 0; i < count; i++) {
+                const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.5;
+                const speed = 1.2 + Math.random() * 2.6;
+                state.particles.push({
+                    x: cx,
+                    y: cy,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    color: colors[i % colors.length],
+                    alpha: 1,
+                    size: 2.5 + Math.random() * 2.5
+                });
+            }
+        }
+
+        function spawnFloatingText(gx, gy, text, color = '#e11d48') {
+            const cx = Math.min(Math.max(gx * state.tileSize + state.tileSize / 2, 40), canvas.width - 40);
+            const cy = Math.max(gy * state.tileSize, 24);
+            state.floatingTexts.push({
+                x: cx,
+                y: cy,
+                text,
+                color,
+                alpha: 1,
+                vy: -1.1
+            });
+        }
+
+        function init() {
+            stop();
+            canvas = Utils.get('arcade-game-canvas');
+            if (!canvas) return;
+            const newCanvas = canvas.cloneNode(true);
+            canvas.parentNode.replaceChild(newCanvas, canvas);
+            canvas = newCanvas;
+            ctx = canvas.getContext('2d');
+
+            if (isMobile()) {
+                state.gridW = 20;
+                state.gridH = 18;
+                state.tileSize = 28;
+            } else {
+                state.gridW = AppConfig.GAME.GRID_W;
+                state.gridH = AppConfig.GAME.GRID_H;
+                state.tileSize = AppConfig.GAME.TILE_SIZE;
+            }
+            canvas.width = state.gridW * state.tileSize;
+            canvas.height = state.gridH * state.tileSize;
+
+            resetState();
+            spawnFood();
+            setupControls();
+            updateHUD('☁️ ¡Atrapa dulces!');
+            if (window.location.href.includes('test=snake_action')) {
+                state.snake = [
+                    { x: 11, y: 8 },
+                    { x: 10, y: 8 },
+                    { x: 9, y: 8 },
+                    { x: 8, y: 8 },
+                    { x: 8, y: 9 },
+                    { x: 8, y: 10 },
+                    { x: 7, y: 10 }
+                ];
+                state.food = { x: 13, y: 8 };
+                state.bonusFood = { x: 11, y: 5, type: 'roll', spawnTime: performance.now() - 1200, duration: 6500 };
+                state.score = 75;
+                state.highScore = 120;
+                state.combo = 3;
+                state.lastEatTime = performance.now();
+                spawnParticles(10, 8, ['#ff4d6d', '#ff8fa3', '#38bdf8', '#f59e0b'], 12);
+                spawnFloatingText(10, 7, '+20 x3 🔥', '#e11d48');
+                updateHUD('🔥 Combo x3!');
+            }
+            loopId = requestAnimationFrame(gameLoop);
+        }
+
         function setDifficulty(level) {
-            const speeds = { 'normal': 130, 'hard': 80, 'expert': 50 };
+            const speeds = { 'normal': 130, 'hard': 85, 'expert': 55 };
+            state.difficulty = level;
             state.speed = speeds[level] || 130;
             playSound('diff-' + level);
+            if (navigator.vibrate) navigator.vibrate(15);
             
-            // Reflejar la dificultad activa en los botones visuales (SVG)
+            // Reflejar la dificultad activa en los botones visuales (SVG de escritorio y pastillas móviles)
             Utils.queryAll('.diff-svg-hitbox').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.difficulty === level);
+            });
+            Utils.queryAll('.mobile-diff-pill').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.difficulty === level);
             });
             
             if (!state.active || state.gameOver) init();
         }
-        function resetState() { state.snake = [{x: 10, y: 10}, {x: 9, y: 10}, {x: 8, y: 10}]; state.dir = { x: 1, y: 0 }; state.nextDir = { x: 1, y: 0 }; state.score = 0; state.active = true; state.gameOver = false; }
+
+        function resetState() {
+            const startX = Math.floor(state.gridW / 2);
+            const startY = Math.floor(state.gridH / 2);
+            state.snake = [
+                { x: startX, y: startY },
+                { x: startX - 1, y: startY },
+                { x: startX - 2, y: startY }
+            ];
+            state.dir = { x: 1, y: 0 };
+            state.dirQueue = [];
+            state.score = 0;
+            state.combo = 1;
+            state.lastEatTime = 0;
+            state.feverUntil = 0;
+            state.heartsEaten = 0;
+            state.newRecord = false;
+            state.bonusFood = null;
+            state.particles = [];
+            state.floatingTexts = [];
+            state.active = true;
+            state.gameOver = false;
+        }
+
+        function isCellOccupied(x, y) {
+            if (state.snake.some(s => s.x === x && s.y === y)) return true;
+            if (state.food && state.food.x === x && state.food.y === y) return true;
+            if (state.bonusFood && state.bonusFood.x === x && state.bonusFood.y === y) return true;
+            return false;
+        }
+
         function spawnFood() {
             let valid = false;
-            while (!valid) { state.food.x = Math.floor(Math.random() * AppConfig.GAME.GRID_W); state.food.y = Math.floor(Math.random() * AppConfig.GAME.GRID_H); valid = !state.snake.some(s => s.x === state.food.x && s.y === state.food.y); }
+            let attempts = 0;
+            while (!valid && attempts < 200) {
+                attempts++;
+                const fx = Math.floor(Math.random() * state.gridW);
+                const fy = Math.floor(Math.random() * state.gridH);
+                if (!state.snake.some(s => s.x === fx && s.y === fy) && (!state.bonusFood || state.bonusFood.x !== fx || state.bonusFood.y !== fy)) {
+                    state.food.x = fx;
+                    state.food.y = fy;
+                    valid = true;
+                }
+            }
         }
+
+        function spawnBonusFood() {
+            let attempts = 0;
+            while (attempts < 100) {
+                attempts++;
+                const bx = Math.floor(Math.random() * state.gridW);
+                const by = Math.floor(Math.random() * state.gridH);
+                if (!isCellOccupied(bx, by)) {
+                    const type = Math.random() < 0.55 ? 'roll' : 'star';
+                    state.bonusFood = {
+                        x: bx,
+                        y: by,
+                        type,
+                        spawnTime: performance.now(),
+                        duration: 6500
+                    };
+                    break;
+                }
+            }
+        }
+
         function setupControls() {
             window.addEventListener('keydown', handleKey);
             let startX = 0, startY = 0;
-            canvas.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; startY = e.touches[0].clientY; e.preventDefault(); if (state.gameOver) init(); }, {passive: false});
+            canvas.addEventListener('touchstart', (e) => {
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+                e.preventDefault();
+                if (state.gameOver) {
+                    if (navigator.vibrate) navigator.vibrate(15);
+                    init();
+                }
+            }, { passive: false });
+
             canvas.addEventListener('touchmove', (e) => {
-                e.preventDefault(); if (state.gameOver) return;
-                const endX = e.touches[0].clientX; const endY = e.touches[0].clientY; const diffX = endX - startX; const diffY = endY - startY;
-                if (Math.abs(diffX) > Math.abs(diffY)) { if (Math.abs(diffX) > 30) { if (diffX > 0 && state.dir.x === 0) state.nextDir = { x: 1, y: 0 }; else if (diffX < 0 && state.dir.x === 0) state.nextDir = { x: -1, y: 0 }; startX = endX; startY = endY; } } 
-                else { if (Math.abs(diffY) > 30) { if (diffY > 0 && state.dir.y === 0) state.nextDir = { x: 0, y: 1 }; else if (diffY < 0 && state.dir.y === 0) state.nextDir = { x: 0, y: -1 }; startX = endX; startY = endY; } }
-            }, {passive: false});
+                e.preventDefault();
+                if (state.gameOver) return;
+                const endX = e.touches[0].clientX;
+                const endY = e.touches[0].clientY;
+                const diffX = endX - startX;
+                const diffY = endY - startY;
+                const threshold = 20;
+                if (Math.abs(diffX) > Math.abs(diffY)) {
+                    if (Math.abs(diffX) > threshold) {
+                        queueDirection(diffX > 0 ? 1 : -1, 0);
+                        if (navigator.vibrate) navigator.vibrate(8);
+                        startX = endX;
+                        startY = endY;
+                    }
+                } else {
+                    if (Math.abs(diffY) > threshold) {
+                        queueDirection(0, diffY > 0 ? 1 : -1);
+                        if (navigator.vibrate) navigator.vibrate(8);
+                        startX = endX;
+                        startY = endY;
+                    }
+                }
+            }, { passive: false });
+
+            if (!dpadBound) {
+                dpadBound = true;
+                const dirMap = {
+                    'up': { x: 0, y: -1 },
+                    'down': { x: 0, y: 1 },
+                    'left': { x: -1, y: 0 },
+                    'right': { x: 1, y: 0 }
+                };
+                Utils.queryAll('.dpad-btn').forEach(btn => {
+                    const handlePress = (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        btn.classList.add('pressed');
+                        if (navigator.vibrate) navigator.vibrate(10);
+                        if (state.gameOver) {
+                            init();
+                            return;
+                        }
+                        const d = dirMap[btn.dataset.dir];
+                        if (d) queueDirection(d.x, d.y);
+                    };
+                    const handleRelease = () => btn.classList.remove('pressed');
+
+                    btn.addEventListener('touchstart', handlePress, { passive: false });
+                    btn.addEventListener('touchend', handleRelease);
+                    btn.addEventListener('touchcancel', handleRelease);
+                    btn.addEventListener('mousedown', handlePress);
+                    btn.addEventListener('mouseup', handleRelease);
+                    btn.addEventListener('mouseleave', handleRelease);
+                });
+            }
         }
+
         function handleKey(e) {
             const keys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '];
             if (keys.includes(e.key)) e.preventDefault();
             if (state.gameOver && keys.includes(e.key)) { init(); return; }
-            switch(e.key) { case 'ArrowUp': if(state.dir.y === 0) state.nextDir = { x: 0, y: -1 }; break; case 'ArrowDown': if(state.dir.y === 0) state.nextDir = { x: 0, y: 1 }; break; case 'ArrowLeft': if(state.dir.x === 0) state.nextDir = { x: -1, y: 0 }; break; case 'ArrowRight': if(state.dir.x === 0) state.nextDir = { x: 1, y: 0 }; break; }
+            switch(e.key) {
+                case 'ArrowUp': queueDirection(0, -1); break;
+                case 'ArrowDown': queueDirection(0, 1); break;
+                case 'ArrowLeft': queueDirection(-1, 0); break;
+                case 'ArrowRight': queueDirection(1, 0); break;
+            }
         }
+
         function gameLoop(timestamp) {
             if (!state.active) return;
-            if (timestamp - state.lastTime > state.speed) { update(); state.lastTime = timestamp; }
+            if (timestamp - state.lastTime > state.speed) {
+                update();
+                state.lastTime = timestamp;
+            }
             if (state.active) draw();
             loopId = requestAnimationFrame(gameLoop);
         }
+
         function update() {
-            state.dir = state.nextDir;
+            const now = performance.now();
+
+            // Expirar bonus si pasó su tiempo
+            if (state.bonusFood && now - state.bonusFood.spawnTime >= state.bonusFood.duration) {
+                state.bonusFood = null;
+            }
+
+            // Resetear combo si pasó mucho tiempo sin comer
+            if (state.combo > 1 && now - state.lastEatTime > 4200) {
+                state.combo = 1;
+                updateHUD();
+            }
+
+            if (state.dirQueue.length > 0) {
+                state.dir = state.dirQueue.shift();
+            }
+
             const head = { x: state.snake[0].x + state.dir.x, y: state.snake[0].y + state.dir.y };
-            if (head.x < 0 || head.x >= AppConfig.GAME.GRID_W || head.y < 0 || head.y >= AppConfig.GAME.GRID_H || state.snake.some(s => s.x === head.x && s.y === head.y)) { gameOver(); return; }
+            if (head.x < 0 || head.x >= state.gridW || head.y < 0 || head.y >= state.gridH || state.snake.some(s => s.x === head.x && s.y === head.y)) {
+                gameOver();
+                return;
+            }
+
             state.snake.unshift(head);
-            if (head.x === state.food.x && head.y === state.food.y) { 
-                state.score += 10; 
+
+            // ¿Comió el ítem de bonus?
+            if (state.bonusFood && head.x === state.bonusFood.x && head.y === state.bonusFood.y) {
+                const isRoll = state.bonusFood.type === 'roll';
+                const basePts = isRoll ? 30 : 25;
+                const feverMult = now < state.feverUntil ? 2 : 1;
+                const pts = basePts * feverMult;
+                state.score += pts;
+                state.lastEatTime = now;
+
+                if (isRoll) {
+                    state.feverUntil = now + 6000;
+                }
+
+                playSound('bonus');
+                if (navigator.vibrate) navigator.vibrate([20, 40, 30]);
+                spawnParticles(head.x, head.y, ['#f59e0b', '#fde047', '#38bdf8', '#f472b6'], 16);
+                spawnFloatingText(head.x, head.y, isRoll ? `+${pts} 🍥✨` : `+${pts} ⭐`, '#d97706');
+
+                if (state.score > state.highScore) {
+                    state.highScore = state.score;
+                    state.newRecord = true;
+                    localStorage.setItem('snakeHighScore', state.highScore);
+                }
+
+                state.bonusFood = null;
+                updateHUD(isRoll ? '✨ ¡Fiebre Canela x2!' : '🌟 ¡Estrella Mágica!');
+            }
+
+            // ¿Comió el corazón clásico?
+            if (head.x === state.food.x && head.y === state.food.y) {
+                if (now - state.lastEatTime <= 4200 && state.lastEatTime > 0) {
+                    state.combo = Math.min(state.combo + 1, 5);
+                } else {
+                    state.combo = 1;
+                }
+                state.lastEatTime = now;
+                state.heartsEaten++;
+
+                const feverMult = now < state.feverUntil ? 2 : 1;
+                const comboBonus = (state.combo - 1) * 5;
+                const gained = (10 + comboBonus) * feverMult;
+                state.score += gained;
+
                 playSound('eat');
-                if (state.score > state.highScore) { state.highScore = state.score; localStorage.setItem('snakeHighScore', state.highScore); }
-                Utils.get('score-display').textContent = 'Puntos: ' + state.score + ' | Mejor: ' + state.highScore; 
-                spawnFood(); 
-            } else { state.snake.pop(); }
+                if (navigator.vibrate) navigator.vibrate(15);
+                spawnParticles(head.x, head.y, ['#ff4d6d', '#ff8fa3', '#38bdf8', '#ffffff'], 11);
+                spawnFloatingText(
+                    head.x,
+                    head.y,
+                    state.combo > 1 ? `+${gained} x${state.combo}` : `+${gained}`,
+                    feverMult > 1 ? '#d97706' : '#e11d48'
+                );
+
+                if (state.score > state.highScore) {
+                    state.highScore = state.score;
+                    state.newRecord = true;
+                    localStorage.setItem('snakeHighScore', state.highScore);
+                }
+
+                updateHUD();
+                spawnFood();
+
+                if (state.heartsEaten % 3 === 0 && !state.bonusFood) {
+                    spawnBonusFood();
+                }
+            } else {
+                state.snake.pop();
+            }
         }
+
         function draw() {
-            // Cuadrícula en tablero pastel alternado (estilo Google Snake, visible pero delicada)
-            const ts = AppConfig.GAME.TILE_SIZE;
-            for (let c = 0; c < AppConfig.GAME.GRID_W; c++) {
-                for (let r = 0; r < AppConfig.GAME.GRID_H; r++) {
-                    ctx.fillStyle = (c + r) % 2 === 0 ? '#f6fbfd' : '#eaf4fa';
+            const ts = state.tileSize;
+            const now = performance.now();
+            const isFever = now < state.feverUntil;
+
+            // Cuadrícula en tablero pastel alternado
+            for (let c = 0; c < state.gridW; c++) {
+                for (let r = 0; r < state.gridH; r++) {
+                    if (isFever) {
+                        ctx.fillStyle = (c + r) % 2 === 0 ? '#fffbeb' : '#fef3c7';
+                    } else {
+                        ctx.fillStyle = (c + r) % 2 === 0 ? '#f6fbfd' : '#eaf4fa';
+                    }
                     ctx.fillRect(c * ts, r * ts, ts, ts);
                 }
             }
             
-            // Líneas divisorias suaves perfectamente calibradas
-            ctx.strokeStyle = 'rgba(70, 130, 180, 0.12)';
+            // Líneas divisorias suaves
+            ctx.strokeStyle = isFever ? 'rgba(217, 119, 6, 0.12)' : 'rgba(70, 130, 180, 0.12)';
             ctx.lineWidth = 1;
             for (let i = 0; i <= canvas.width; i += ts) {
                 ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
@@ -1596,50 +1962,74 @@ Y tal vez intento darle profundidad a algo que es más simple, pero cuando habla
             
             // Sombra suave para la serpiente
             ctx.shadowBlur = 6;
-            ctx.shadowColor = 'rgba(3, 105, 161, 0.25)';
+            ctx.shadowColor = isFever ? 'rgba(245, 158, 11, 0.35)' : 'rgba(3, 105, 161, 0.25)';
+
+            const headSeg = state.snake[0];
+            const distToFood = headSeg ? (Math.abs(headSeg.x - state.food.x) + Math.abs(headSeg.y - state.food.y)) : 99;
+            const distToBonus = (headSeg && state.bonusFood) ? (Math.abs(headSeg.x - state.bonusFood.x) + Math.abs(headSeg.y - state.bonusFood.y)) : 99;
+            const nearTreat = Math.min(distToFood, distToBonus) <= 2;
             
             state.snake.forEach((seg, i) => {
-                let x = seg.x * AppConfig.GAME.TILE_SIZE + 1;
-                let y = seg.y * AppConfig.GAME.TILE_SIZE + 1;
-                let s = AppConfig.GAME.TILE_SIZE - 2;
+                const x = seg.x * ts + 1;
+                const y = seg.y * ts + 1;
+                const s = ts - 2;
                 
                 if (i === 0) {
-                    // Cabeza: blanca con bordes celestes y carita tierna
+                    // Cabeza Cinnamoroll: blanca con bordes celestes y carita expresiva
                     ctx.fillStyle = '#ffffff';
                     ctx.fillRect(x, y, s, s);
                     
                     ctx.shadowBlur = 0;
-                    ctx.strokeStyle = '#38bdf8';
-                    ctx.lineWidth = 1.5;
+                    ctx.strokeStyle = isFever ? '#f59e0b' : '#38bdf8';
+                    ctx.lineWidth = 1.8;
                     ctx.strokeRect(x, y, s, s);
                     
-                    // Ojitos tiernos
+                    // Ojitos tiernos mirando ligeramente hacia la dirección de avance
+                    const lookX = state.dir.x * 1.5;
+                    const lookY = state.dir.y * 1.2;
+                    const eyeY = y + s * 0.36 + lookY;
+                    const leftEyeX = x + s * 0.28 + lookX;
+                    const rightEyeX = x + s * 0.72 + lookX;
+                    const eyeR = Math.max(2, s * 0.11);
+
                     ctx.fillStyle = '#0f172a';
-                    ctx.beginPath(); ctx.arc(x + 5, y + 6, 2, 0, Math.PI * 2); ctx.fill();
-                    ctx.beginPath(); ctx.arc(x + 13, y + 6, 2, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(leftEyeX, eyeY, eyeR, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(rightEyeX, eyeY, eyeR, 0, Math.PI * 2); ctx.fill();
                     
                     // Rubor en mejillas
-                    ctx.fillStyle = 'rgba(255, 150, 180, 0.65)';
-                    ctx.beginPath(); ctx.arc(x + 3, y + 11, 2, 0, Math.PI * 2); ctx.fill();
-                    ctx.beginPath(); ctx.arc(x + 15, y + 11, 2, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = 'rgba(255, 130, 170, 0.72)';
+                    ctx.beginPath(); ctx.arc(x + s * 0.18, y + s * 0.62, eyeR * 1.05, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(x + s * 0.82, y + s * 0.62, eyeR * 1.05, 0, Math.PI * 2); ctx.fill();
+
+                    // Boquita (:O cuando está cerca de un dulce, o sonrisa tierna)
+                    if (nearTreat) {
+                        ctx.fillStyle = '#fb7185';
+                        ctx.beginPath();
+                        ctx.arc(x + s * 0.5 + lookX * 0.5, y + s * 0.66 + lookY * 0.5, Math.max(2, s * 0.12), 0, Math.PI * 2);
+                        ctx.fill();
+                    }
                     
                     ctx.shadowBlur = 6;
                 } else {
-                    // Cuerpo: celeste cielo pastel vibrante
-                    ctx.fillStyle = '#38bdf8';
+                    // Cuerpo: celeste cielo pastel vibrante (o dorado rosado en modo Fiebre)
+                    if (isFever) {
+                        ctx.fillStyle = i % 2 === 0 ? '#fde047' : '#f472b6';
+                        ctx.strokeStyle = '#d97706';
+                    } else {
+                        ctx.fillStyle = i % 2 === 0 ? '#7dd3fc' : '#38bdf8';
+                        ctx.strokeStyle = '#0284c7';
+                    }
                     ctx.fillRect(x, y, s, s);
-                    
-                    ctx.strokeStyle = '#0284c7';
                     ctx.lineWidth = 1;
                     ctx.strokeRect(x, y, s, s);
                 }
             });
             
-            // Comida (Corazón palpitante)
+            // Comida clásica (Corazón palpitante)
             state.beat += 0.2;
             const scale = 1 + Math.sin(state.beat) * 0.15;
-            const cx = state.food.x * AppConfig.GAME.TILE_SIZE + AppConfig.GAME.TILE_SIZE / 2;
-            const cy = state.food.y * AppConfig.GAME.TILE_SIZE + AppConfig.GAME.TILE_SIZE / 2;
+            const cx = state.food.x * ts + ts / 2;
+            const cy = state.food.y * ts + ts / 2;
             
             ctx.save();
             ctx.translate(cx, cy);
@@ -1648,22 +2038,94 @@ Y tal vez intento darle profundidad a algo que es más simple, pero cuando habla
             ctx.shadowBlur = 12;
             ctx.shadowColor = 'rgba(255, 77, 109, 0.45)';
             ctx.fillStyle = '#ff4d6d';
-            drawHeart(state.food.x * AppConfig.GAME.TILE_SIZE, state.food.y * AppConfig.GAME.TILE_SIZE + 2, AppConfig.GAME.TILE_SIZE);
+            drawHeart(state.food.x * ts, state.food.y * ts + 2, ts);
             ctx.restore();
+
+            // Bonus Food (Rollo de Canela 🍥 o Estrella ⭐ con anillo de tiempo)
+            if (state.bonusFood) {
+                const elapsed = now - state.bonusFood.spawnTime;
+                const progress = Math.max(0, 1 - elapsed / state.bonusFood.duration);
+                const bcx = state.bonusFood.x * ts + ts / 2;
+                const bcy = state.bonusFood.y * ts + ts / 2;
+                const bScale = 1 + Math.cos(state.beat * 1.4) * 0.14;
+
+                ctx.save();
+                // Anillo de cuenta regresiva
+                ctx.beginPath();
+                ctx.arc(bcx, bcy, ts * 0.56, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * progress);
+                ctx.strokeStyle = state.bonusFood.type === 'roll' ? '#f59e0b' : '#ec4899';
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+
+                ctx.translate(bcx, bcy);
+                ctx.scale(bScale, bScale);
+                ctx.font = `${Math.floor(ts * 0.78)}px "Segoe UI Emoji", "Apple Color Emoji", sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(state.bonusFood.type === 'roll' ? '🍥' : '⭐', 0, 1);
+                ctx.restore();
+            }
+
+            // Partículas al comer
             ctx.shadowBlur = 0;
+            for (let i = state.particles.length - 1; i >= 0; i--) {
+                const p = state.particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.alpha -= 0.035;
+                if (p.alpha <= 0) {
+                    state.particles.splice(i, 1);
+                    continue;
+                }
+                ctx.save();
+                ctx.globalAlpha = p.alpha;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            // Textos flotantes (+10, Combo, etc.)
+            for (let i = state.floatingTexts.length - 1; i >= 0; i--) {
+                const ft = state.floatingTexts[i];
+                ft.y += ft.vy;
+                ft.alpha -= 0.028;
+                if (ft.alpha <= 0) {
+                    state.floatingTexts.splice(i, 1);
+                    continue;
+                }
+                ctx.save();
+                ctx.globalAlpha = ft.alpha;
+                ctx.font = `800 ${isMobile() ? 16 : 14}px "Nunito", "Segoe UI", sans-serif`;
+                ctx.fillStyle = ft.color;
+                ctx.textAlign = 'center';
+                ctx.fillText(ft.text, ft.x, ft.y);
+                ctx.restore();
+            }
         }
+
         function drawHeart(x, y, size) {
-            ctx.beginPath(); ctx.moveTo(x, y + size / 4); ctx.quadraticCurveTo(x, y, x + size / 4, y); ctx.quadraticCurveTo(x + size / 2, y, x + size / 4, y + size / 4);
-            ctx.quadraticCurveTo(x + size / 2, y, x + size * 3/4, y); ctx.quadraticCurveTo(x + size, y, x + size, y + size / 4);
-            ctx.quadraticCurveTo(x + size, y + size / 2, x + size / 2, y + size * 3/4); ctx.quadraticCurveTo(x, y + size / 2, x, y + size / 4); ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(x, y + size / 4);
+            ctx.quadraticCurveTo(x, y, x + size / 4, y);
+            ctx.quadraticCurveTo(x + size / 2, y, x + size / 4, y + size / 4);
+            ctx.quadraticCurveTo(x + size / 2, y, x + size * 3/4, y);
+            ctx.quadraticCurveTo(x + size, y, x + size, y + size / 4);
+            ctx.quadraticCurveTo(x + size, y + size / 2, x + size / 2, y + size * 3/4);
+            ctx.quadraticCurveTo(x, y + size / 2, x, y + size / 4);
+            ctx.fill();
         }
+
         function gameOver() {
             playSound('die');
+            if (navigator.vibrate) navigator.vibrate([40, 60, 80]);
             state.active = false;
             state.gameOver = true;
+            updateHUD('💔 ¡Inténtalo de nuevo!');
             
             // Pantalla Game Over pastel esmerilada clara
-            ctx.fillStyle = 'rgba(240, 248, 255, 0.9)';
+            ctx.fillStyle = 'rgba(240, 248, 255, 0.92)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
             ctx.fillStyle = '#e11d48';
@@ -1671,18 +2133,28 @@ Y tal vez intento darle profundidad a algo que es más simple, pero cuando habla
             ctx.textAlign = 'center';
             ctx.shadowBlur = 10;
             ctx.shadowColor = 'rgba(225, 29, 72, 0.35)';
-            ctx.fillText("¡Bien Cojuda!", canvas.width / 2, canvas.height / 2 - 20);
+            ctx.fillText("¡Bien Cojuda!", canvas.width / 2, canvas.height / 2 - 26);
             
             ctx.shadowBlur = 0;
             ctx.font = 'bold 24px "Segoe UI"';
             ctx.fillStyle = '#0284c7';
-            ctx.fillText("Puntos: " + state.score, canvas.width / 2, canvas.height / 2 + 22);
+            const scoreLabel = state.newRecord ? `Puntos: ${state.score} 🏆 ¡Nuevo Récord!` : `Puntos: ${state.score}`;
+            ctx.fillText(scoreLabel, canvas.width / 2, canvas.height / 2 + 18);
             
-            ctx.font = '500 16px "Segoe UI"';
+            ctx.font = '600 16px "Segoe UI"';
             ctx.fillStyle = '#64748b';
-            ctx.fillText("Presiona cualquier tecla para continuar", canvas.width / 2, canvas.height / 2 + 62);
+            const retryHint = isMobile()
+                ? "Toca la pantalla o un botón para reintentar"
+                : "Presiona cualquier tecla para continuar";
+            ctx.fillText(retryHint, canvas.width / 2, canvas.height / 2 + 58);
         }
-        function stop() { state.active = false; if (loopId) cancelAnimationFrame(loopId); window.removeEventListener('keydown', handleKey); }
+
+        function stop() {
+            state.active = false;
+            if (loopId) cancelAnimationFrame(loopId);
+            window.removeEventListener('keydown', handleKey);
+        }
+
         return { init, stop, setDifficulty };
     })();
 
@@ -1726,7 +2198,7 @@ Y tal vez intento darle profundidad a algo que es más simple, pero cuando habla
             const card = target.closest('.card');
             if (card) { e.preventDefault(); e.stopPropagation(); if (document.body.classList.contains('design-mode')) { CardEditor.open(card); } else { openSongModal(card); } return; }
             if (target === overlay) { overlay.classList.add('hidden'); }
-            const diffBtn = target.closest('.diff-svg-hitbox');
+            const diffBtn = target.closest('.diff-svg-hitbox') || target.closest('.mobile-diff-pill');
             if (diffBtn) {
                 const diff = diffBtn.dataset.difficulty;
                 SnakeGame.setDifficulty(diff);
@@ -2253,6 +2725,13 @@ Y tal vez intento darle profundidad a algo que es más simple, pero cuando habla
                     setTimeout(() => Utils.get('mobile-hero-envelope-btn')?.click(), 400);
                     setTimeout(() => Utils.get('mobile-hero-envelope-btn')?.click(), 800);
                 }, 300);
+            } else if (window.location.href.includes('test=snake')) {
+                const am = Utils.get('arcade-game-modal');
+                const mc = am ? am.querySelector('.modal-content-game') : null;
+                if (am) am.style.transition = 'none';
+                if (mc) mc.style.transition = 'none';
+                const btn = document.querySelector('.open-game-modal-btn');
+                if (btn) btn.click();
             }
         }
 

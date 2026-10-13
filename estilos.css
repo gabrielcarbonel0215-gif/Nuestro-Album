@@ -1301,7 +1301,10 @@ body.playlist-debug-mode #playlist-container {
 #mobile-mini-player-bar,
 #mobile-lyrics-sheet,
 #mobile-playlist-sheet,
-#mobile-bottom-nav {
+#mobile-bottom-nav,
+.mobile-snake-topbar,
+.mobile-snake-hud,
+.mobile-snake-dpad {
     display: none !important;
 }
 
@@ -2939,6 +2942,279 @@ body.playlist-debug-mode #playlist-container {
     #modal #modal-desc p {
         margin: 0 0 10px 0 !important;
     }
+
+    /* -----------------------------------------------------------
+       7. Consola Portátil "Cinnamoroll Pocket" (Snake en Android)
+       ----------------------------------------------------------- */
+    #arcade-game-modal {
+        z-index: 10060 !important;
+        padding: 10px !important;
+        box-sizing: border-box !important;
+        backdrop-filter: blur(12px) !important;
+        -webkit-backdrop-filter: blur(12px) !important;
+    }
+    #arcade-game-modal .modal-content-game {
+        width: calc(100% - 12px) !important;
+        max-width: 365px !important;
+        height: auto !important;
+        max-height: 95dvh !important;
+        background: linear-gradient(180deg, #dff2fe 0%, #f0f9ff 48%, #fce7f3 100%) !important;
+        border: 3px solid #ffffff !important;
+        border-radius: 30px !important;
+        padding: 12px 14px 14px 14px !important;
+        box-shadow: 0 22px 50px rgba(15, 23, 42, 0.55), 0 6px 0 #93c5fd, inset 0 2px 6px rgba(255, 255, 255, 0.95) !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        position: relative !important;
+        overflow: visible !important;
+        touch-action: none !important;
+        user-select: none !important;
+        box-sizing: border-box !important;
+        transform: none !important;
+    }
+    #arcade-game-modal #cerrar-game-modal {
+        position: absolute !important;
+        top: 9px !important;
+        right: 12px !important;
+        width: 28px !important;
+        height: 28px !important;
+        border-radius: 50% !important;
+        background: #ffffff !important;
+        color: #475569 !important;
+        border: 1px solid rgba(148, 163, 184, 0.25) !important;
+        font-size: 19px !important;
+        font-weight: 800 !important;
+        line-height: 1 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-shadow: 0 3px 8px rgba(15, 23, 42, 0.12) !important;
+        text-shadow: none !important;
+        opacity: 1 !important;
+        z-index: 2050 !important;
+    }
+    #arcade-game-modal #cerrar-game-modal:active {
+        transform: scale(0.9) !important;
+        background: #f1f5f9 !important;
+    }
+    #arcade-game-modal .difficulty-selector,
+    #arcade-game-modal .game-controls {
+        display: none !important;
+    }
+
+    /* Cabecera y Selector de Dificultad Móvil */
+    .mobile-snake-topbar {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        width: 100% !important;
+        gap: 9px !important;
+        margin-bottom: 7px !important;
+    }
+    .mobile-snake-brand {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 5px !important;
+        background: rgba(255, 255, 255, 0.85) !important;
+        padding: 4px 12px !important;
+        border-radius: 999px !important;
+        border: 1px solid rgba(186, 230, 253, 0.9) !important;
+        box-shadow: 0 2px 6px rgba(2, 132, 199, 0.08) !important;
+    }
+    .mobile-snake-cloud {
+        font-size: 13px !important;
+    }
+    .mobile-snake-title {
+        font-family: 'Quicksand', sans-serif !important;
+        font-size: 10.5px !important;
+        font-weight: 800 !important;
+        letter-spacing: 1px !important;
+        color: #0284c7 !important;
+    }
+    .mobile-diff-pills {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 6px !important;
+        width: 100% !important;
+        background: rgba(255, 255, 255, 0.7) !important;
+        padding: 4px !important;
+        border-radius: 14px !important;
+        border: 1px solid rgba(255, 255, 255, 0.9) !important;
+        box-sizing: border-box !important;
+    }
+    .mobile-diff-pill {
+        flex: 1 !important;
+        border: none !important;
+        background: transparent !important;
+        color: #64748b !important;
+        font-family: 'Quicksand', sans-serif !important;
+        font-size: 11.5px !important;
+        font-weight: 800 !important;
+        padding: 6px 4px !important;
+        border-radius: 10px !important;
+        cursor: pointer !important;
+        transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+    }
+    .mobile-diff-pill[data-difficulty="normal"].active {
+        background: #0284c7 !important;
+        color: #ffffff !important;
+        box-shadow: 0 3px 10px rgba(2, 132, 199, 0.35) !important;
+    }
+    .mobile-diff-pill[data-difficulty="hard"].active {
+        background: #7c3aed !important;
+        color: #ffffff !important;
+        box-shadow: 0 3px 10px rgba(124, 58, 237, 0.35) !important;
+    }
+    .mobile-diff-pill[data-difficulty="expert"].active {
+        background: #e11d48 !important;
+        color: #ffffff !important;
+        box-shadow: 0 3px 10px rgba(225, 29, 72, 0.35) !important;
+    }
+
+    /* Marcador LCD Integrado */
+    .mobile-snake-hud {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        width: 100% !important;
+        background: #ffffff !important;
+        padding: 6px 10px !important;
+        border-radius: 14px !important;
+        margin-bottom: 7px !important;
+        border: 1.5px solid #bae6fd !important;
+        box-shadow: inset 0 2px 4px rgba(186, 230, 253, 0.25) !important;
+        box-sizing: border-box !important;
+    }
+    .mobile-hud-box {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        min-width: 68px !important;
+    }
+    .mobile-hud-label {
+        font-size: 9px !important;
+        font-weight: 800 !important;
+        color: #64748b !important;
+        letter-spacing: 0.4px !important;
+    }
+    .mobile-hud-val {
+        font-family: 'Quicksand', sans-serif !important;
+        font-size: 16px !important;
+        font-weight: 800 !important;
+        color: #0f172a !important;
+        line-height: 1.1 !important;
+        font-variant-numeric: tabular-nums !important;
+    }
+    .mobile-hud-status {
+        font-family: 'Quicksand', sans-serif !important;
+        font-size: 11px !important;
+        font-weight: 800 !important;
+        color: #0284c7 !important;
+        background: #f0f9ff !important;
+        padding: 4px 10px !important;
+        border-radius: 999px !important;
+        border: 1px solid #bae6fd !important;
+        white-space: nowrap !important;
+        transition: transform 0.2s ease, background-color 0.2s ease !important;
+    }
+    .mobile-hud-status.fever-mode {
+        background: #fef3c7 !important;
+        color: #d97706 !important;
+        border-color: #fde68a !important;
+        animation: pulsePillDot 0.9s infinite ease-in-out !important;
+    }
+
+    /* Bisel de la Pantalla LCD */
+    #arcade-game-modal .game-layout {
+        width: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        gap: 0 !important;
+    }
+    #arcade-game-modal .game-wrapper {
+        width: 100% !important;
+        height: auto !important;
+        aspect-ratio: auto !important;
+        padding: 7px !important;
+        background: linear-gradient(145deg, #bae6fd, #7dd3fc) !important;
+        border-radius: 20px !important;
+        box-shadow: inset 0 3px 8px rgba(2, 132, 199, 0.28), 0 2px 0 rgba(255, 255, 255, 0.9) !important;
+        filter: none !important;
+        box-sizing: border-box !important;
+    }
+    #arcade-game-modal .game-wrapper::after {
+        display: none !important;
+    }
+    #arcade-game-modal #arcade-game-canvas {
+        width: 100% !important;
+        height: auto !important;
+        aspect-ratio: 20 / 18 !important;
+        top: 0 !important;
+        border-radius: 14px !important;
+        box-shadow: none !important;
+        border: 2px solid #ffffff !important;
+        display: block !important;
+        touch-action: none !important;
+    }
+
+    /* Cruceta Táctil D-Pad */
+    .mobile-snake-dpad {
+        display: grid !important;
+        grid-template-columns: repeat(3, 56px) !important;
+        grid-template-rows: repeat(3, 46px) !important;
+        gap: 5px !important;
+        margin-top: 10px !important;
+        justify-content: center !important;
+        align-items: center !important;
+        touch-action: none !important;
+    }
+    .dpad-btn {
+        width: 100% !important;
+        height: 100% !important;
+        border-radius: 14px !important;
+        background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%) !important;
+        border: 2px solid #bae6fd !important;
+        color: #0284c7 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-shadow: 0 4px 0 #7dd3fc, 0 6px 12px rgba(2, 132, 199, 0.18) !important;
+        cursor: pointer !important;
+        outline: none !important;
+        padding: 0 !important;
+        transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.08s ease !important;
+        -webkit-tap-highlight-color: transparent !important;
+        touch-action: none !important;
+    }
+    .dpad-btn:active,
+    .dpad-btn.pressed {
+        transform: translateY(3px) scale(0.95) !important;
+        box-shadow: 0 1px 0 #7dd3fc, 0 2px 4px rgba(2, 132, 199, 0.15) !important;
+        background: #e0f2fe !important;
+        color: #0369a1 !important;
+    }
+    .dpad-up { grid-column: 2; grid-row: 1; }
+    .dpad-left { grid-column: 1; grid-row: 2; }
+    .dpad-center {
+        grid-column: 2;
+        grid-row: 2;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.65);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        pointer-events: none;
+        box-shadow: inset 0 2px 5px rgba(148, 163, 184, 0.25);
+    }
+    .dpad-right { grid-column: 3; grid-row: 2; }
+    .dpad-down { grid-column: 2; grid-row: 3; }
 }
 
 /* Animaciones */
