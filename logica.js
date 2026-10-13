@@ -498,7 +498,7 @@ Y tal vez intento darle profundidad a algo que es más simple, pero cuando habla
             TILE_SIZE: 20,
             GRID_W: 35,
             GRID_H: 27,
-            DEFAULT_SPEED: 130
+            DEFAULT_SPEED: 160
         },
         ANIMATIONS: {
             doorFrameRate: 120,
@@ -1613,6 +1613,13 @@ Y tal vez intento darle profundidad a algo que es más simple, pero cuando habla
             });
         }
 
+        function getSpeedForDifficulty(level) {
+            const mobileSpeeds = { 'normal': 185, 'hard': 135, 'expert': 95 };
+            const desktopSpeeds = { 'normal': 160, 'hard': 115, 'expert': 80 };
+            const table = isMobile() ? mobileSpeeds : desktopSpeeds;
+            return table[level] || table['normal'];
+        }
+
         function init() {
             stop();
             canvas = Utils.get('arcade-game-canvas');
@@ -1631,6 +1638,7 @@ Y tal vez intento darle profundidad a algo que es más simple, pero cuando habla
                 state.gridH = AppConfig.GAME.GRID_H;
                 state.tileSize = AppConfig.GAME.TILE_SIZE;
             }
+            state.speed = getSpeedForDifficulty(state.difficulty);
             canvas.width = state.gridW * state.tileSize;
             canvas.height = state.gridH * state.tileSize;
 
@@ -1682,9 +1690,8 @@ Y tal vez intento darle profundidad a algo que es más simple, pero cuando habla
         }
 
         function setDifficulty(level) {
-            const speeds = { 'normal': 130, 'hard': 85, 'expert': 55 };
             state.difficulty = level;
-            state.speed = speeds[level] || 130;
+            state.speed = getSpeedForDifficulty(level);
             playSound('diff-' + level);
             if (navigator.vibrate) navigator.vibrate(15);
             
